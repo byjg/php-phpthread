@@ -1,22 +1,5 @@
-# phpthread
+<?php
 
-Native Implementation of Threads in PHP.
-
-A class to spawn a thread. Only works in *nix environments, as Windows platform is missing libpcntl. Forks the process.
-
-This Class was originally was developed by "Superuser"
-
-Original Version ID: Thread.class.php 23 2012-01-23 09:40:32Z superuser
-
-This file was changed by JG based on the post at:
- * http://villavu.com/forum/showthread.php?t=73623
-
-Install in ubuntu:
- * http://ubuntuforums.org/showthread.php?t=549953
-
-# Usage
-
-```php
 require_once('vendor/autoload.php');
 
 // Method to be executed in a thread
@@ -73,13 +56,3 @@ catch (Exception $e)
 {
     echo 'Exception: ' . $e . PHP_EOL;
 }
-```
-
-## FAQ
-
-** How do I instantiate a method class**
-
-```
-$thr = new ByJG\PHPThread\Thread(array('classname', 'methodname'));
-```
-

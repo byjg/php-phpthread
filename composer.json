@@ -1,0 +1,19 @@
+{
+    "name": "byjg/phpthread",
+    "description": "Native Implementation of Threads in PHP.",
+    "authors": [
+        {
+            "name": "Joao Gilberto Magalhães",
+            "email": "joao@byjg.com.br"
+        },
+        {
+            "name": "Superuser"
+        }
+    ],
+    "require": {},
+	"autoload": {
+        "psr-0": {
+            "ByJG\\PHPThread": "./"
+        }
+    }
+}
