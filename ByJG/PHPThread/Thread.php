@@ -26,10 +26,14 @@ class Thread
 	public function __construct($callback)
 	{
 		if (!function_exists('pcntl_fork'))
+		{
 			throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
+		}
 
 		if ($callback == null)
+		{
 			throw new InvalidArgumentException('The callback function is required.');
+		}
 
 		$this->setCallback($callback);
 	}
@@ -75,9 +79,13 @@ class Thread
 			}
 		}
 		elseif (function_exists($callback) && is_callable($callback))
+		{
 			$this->_callback = $callback;
+		}
 		else
+		{
 			throw new InvalidArgumentException("$callback is not valid function");
+		}
 	}
 
 	/**
@@ -116,7 +124,9 @@ class Thread
 			posix_kill($this->_pid, $signal);
 
 			if ($wait)
+			{
 				pcntl_waitpid($this->_pid, $status);
+			}
 		}
 	}
 
