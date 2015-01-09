@@ -77,9 +77,16 @@ catch (Exception $e)
 
 ## FAQ
 
-** How do I instantiate a method class**
+**How do I instantiate a method class?**
 
-```
+```php
 $thr = new ByJG\PHPThread\Thread(array('classname', 'methodname'));
+```
+
+or
+
+```php
+$instance = new myClass();
+$thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
 ```
 
