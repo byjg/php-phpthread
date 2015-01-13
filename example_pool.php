@@ -20,26 +20,30 @@ function Foo($t)
 
 try
 {
-	$threadPool = new ByJG\PHPThread\ThreadPool();
+	// Create a instance of the ThreadPool
+	$threadPool = new \ByJG\PHPThread\ThreadPool();
 
 	// Create the threads
     for ($i = 0; $i < 10; $i++)
     {
-		// Create a new instance of the Thread class, pointing to "Foo" function
+		// Queue a worker pointing to "Foo" function and pass the required parameters
         $threadPool->queueWorker('Foo', [ $i ]);
     }
 
+	// Starts all the threads in the queue
 	$threadPool->startWorkers();
 
+	// Wait until there is no more active workers
 	while($threadPool->activeWorkers() > 0)
 	{
 		echo "Active Workers : " . $threadPool->activeWorkers() . "\n";
 		sleep(1);
 	}
 
+	// Get the return value from the thread.
 	foreach ($threadPool->getThreads() as $thid)
 	{
-		echo 'Result Thread ' . $threadPool->getThreadResult($thid) . "\n";
+		echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
 	}
 
 	echo "\n\nEnded!\n";

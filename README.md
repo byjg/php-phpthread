@@ -14,7 +14,7 @@ This file was changed by JG based on the post at:
 Install in ubuntu:
  * http://ubuntuforums.org/showthread.php?t=549953
 
-# Usage
+# Basic Usage
 
 ```php
 require_once('vendor/autoload.php');
@@ -73,6 +73,41 @@ catch (Exception $e)
 {
     echo 'Exception: ' . $e . PHP_EOL;
 }
+```
+
+# Thread Pool Usage
+
+You can create a pool of threads.
+
+```php
+// Create a instance of the ThreadPool
+$threadPool = new \ByJG\PHPThread\ThreadPool();
+
+// Create the threads
+for ($i = 0; $i < 10; $i++)
+{
+	// Queue a worker pointing to "Foo" function and pass the required parameters
+	$threadPool->queueWorker('Foo', [ $i ]);
+}
+
+// Starts all the threads in the queue
+$threadPool->startWorkers();
+
+// Wait until there is no more active workers
+while($threadPool->activeWorkers() > 0)
+{
+	echo "Active Workers : " . $threadPool->activeWorkers() . "\n";
+	sleep(1);
+}
+
+// Get the return value from the thread.
+foreach ($threadPool->getThreads() as $thid)
+{
+	echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
+}
+
+echo "\n\nEnded!\n";
+
 ```
 
 ## FAQ

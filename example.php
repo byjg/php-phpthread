@@ -23,7 +23,7 @@ try
     for ($i = 0; $i < 10; $i++)
     {
 		// Create a new instance of the Thread class, pointing to "Foo" function
-        $thr = new ByJG\PHPThread\Thread('Foo');
+        $thr = new \ByJG\PHPThread\Thread('Foo');
 
 		// Started the method "Foo" in a tread
         $thr->start($i);

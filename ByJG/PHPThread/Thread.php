@@ -16,12 +16,17 @@ use RuntimeException;
 class Thread
 {
 
-	protected $uniqId;
-	protected $shmKey;
+	/**
+	 * The Id of the shared memory block
+	 * @var long
+	 */
+	protected $_shmKey;
 
-	protected static $lastShmKey = 0xf00;
-
-	protected $_threadResult = null;
+	/**
+	 * The next id of the shared memory block available
+	 * @var type
+	 */
+	protected static $_lastShmKey = 0xf00;
 
 
 	/**
@@ -43,16 +48,8 @@ class Thread
 			throw new InvalidArgumentException('The callback function is required.');
 		}
 
-		$this->shmKey = self::$lastShmKey++;
+		$this->_shmKey = self::$_lastShmKey++;
 		$this->setCallback($callback);
-	}
-
-	public function __destruct()
-	{
-		if (file_exists($this->uniqId))
-		{
-			unlink($this->uniqId);
-		}
 	}
 
 	/**
@@ -106,7 +103,8 @@ class Thread
 	}
 
 	/**
-	 *
+	 * Start the thread
+	 * 
 	 * @throws RuntimeException
 	 */
 	public function start()
@@ -150,17 +148,27 @@ class Thread
 		// Parent.
 	}
 
+	/**
+	 * Save the thread result in a shared memory block
+	 *
+	 * @param mixed $object Need to be serializable
+	 */
 	protected function saveResult($object)
 	{
 		$serialized = serialize($object);
-		$shm_id = shmop_open($this->shmKey, "c", 0644, strlen($serialized));
+		$shm_id = shmop_open($this->_shmKey, "c", 0644, strlen($serialized));
 		shmop_write($shm_id, $serialized, 0);
 		shmop_close($shm_id);
 	}
 
+	/**
+	 * Get the thread result from the shared memory block and erase it
+	 * 
+	 * @return mixed
+	 */
 	public function getResult()
 	{
-		$shm_id = shmop_open($this->shmKey, "a", 0644, 16*1024);
+		$shm_id = shmop_open($this->_shmKey, "a", 0644, 16*1024);
 		$serialized = shmop_read($shm_id, 0, shmop_size($shm_id));
 		shmop_close($shm_id);
 
@@ -168,9 +176,10 @@ class Thread
 	}
 
 	/**
+	 * Kill a thread
 	 *
-	 * @param type $signal
-	 * @param type $wait
+	 * @param int $signal
+	 * @param bool $wait
 	 */
 	public function stop($signal = SIGKILL, $wait = false)
 	{
@@ -186,8 +195,9 @@ class Thread
 	}
 
 	/**
+	 * Handle the signal to the thread
 	 *
-	 * @param type $signal
+	 * @param int $signal
 	 */
 	private function signalHandler($signal)
 	{
