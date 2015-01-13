@@ -9,7 +9,7 @@ class ThreadPool
 
 	protected $_threadInstance = array();
 
-	public function queueWorker($callback, $params = null)
+	public function queueWorker($callback, $params = null, $thid = null)
 	{
 		if (!is_string($callback) || (is_array($callback) && count($callback) != 2))
 		{
@@ -21,15 +21,15 @@ class ThreadPool
 			throw new \InvalidArgumentException('The params needs to be an array');
 		}
 
-		$id = uniqid("", true);
+		$thid = is_null($thid) ? uniqid("", true) : $thid;
 
 		$data = new \stdClass;
 		$data->callback = $callback;
 		$data->params = $params;
 
-		$this->_threadList[$id] = $data;
+		$this->_threadList[$thid] = $data;
 
-		return $id;
+		return $thid;
 	}
 
 	public function startWorkers()

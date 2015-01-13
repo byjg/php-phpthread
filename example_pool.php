@@ -42,7 +42,7 @@ try
 		echo 'Result Thread ' . $threadPool->getThreadResult($thid) . "\n";
 	}
 
-	echo "\n\nChegou ao fim!\n";
+	echo "\n\nEnded!\n";
 
 }
 catch (Exception $e)
