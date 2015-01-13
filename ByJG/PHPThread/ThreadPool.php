@@ -11,7 +11,7 @@ class ThreadPool
 
 	public function queueWorker($callback, $params = null, $thid = null)
 	{
-		if (!is_string($callback) || (is_array($callback) && count($callback) != 2))
+		if (!is_string($callback) && (is_array($callback) && count($callback) != 2))
 		{
 			throw new \InvalidArgumentException('The callback needs to be a value compatible with call_user_func()');
 		}
