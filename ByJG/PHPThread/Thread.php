@@ -16,6 +16,8 @@ use RuntimeException;
 class Thread
 {
 
+	const maxResultSize = 0x4000; // 16kb
+
 	/**
 	 * The Id of the shared memory block
 	 * @var long
@@ -156,9 +158,25 @@ class Thread
 	protected function saveResult($object)
 	{
 		$serialized = serialize($object);
-		$shm_id = shmop_open($this->_shmKey, "c", 0644, strlen($serialized));
-		shmop_write($shm_id, $serialized, 0);
-		shmop_close($shm_id);
+		$size = strlen($serialized);
+		if ($size < self::maxResultSize)
+		{
+			$shm_id = @shmop_open($this->_shmKey, "c", 0644, $size);
+			if(!$shm_id)
+			{
+				throw new Exception("Couldn't create shared memory segment");
+			}
+			$shm_bytes_written = shmop_write($shm_id, $serialized, 0);
+			if ($shm_bytes_written != $size)
+			{
+				warn("Couldn't write the entire length of data");
+			}
+			shmop_close($shm_id);
+		}
+		else
+		{
+			throw new \OverflowException('The response of the thread was greater then ' . self::maxResultSize . ' bytes.');
+		}
 	}
 
 	/**
@@ -168,8 +186,14 @@ class Thread
 	 */
 	public function getResult()
 	{
-		$shm_id = shmop_open($this->_shmKey, "a", 0644, 16*1024);
+		$shm_id = @shmop_open($this->_shmKey, "a", 0644, self::maxResultSize);
+		if(!$shm_id)
+		{
+			return null;
+		}
+
 		$serialized = shmop_read($shm_id, 0, shmop_size($shm_id));
+		shmop_delete($shm_id);
 		shmop_close($shm_id);
 
 		return unserialize($serialized);
