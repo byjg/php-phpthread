@@ -16,7 +16,7 @@ use RuntimeException;
 class Thread
 {
 
-	const maxResultSize = 0x20000; // 128kb
+	const maxResultSize = 0x40000; // 256kb
 
 	/**
 	 * The Id of the shared memory block
