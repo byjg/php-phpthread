@@ -10,7 +10,9 @@
             "name": "Superuser"
         }
     ],
-    "require": {},
+    "require": {
+		"ext-pcntl": "*"
+	},
 	"autoload": {
         "psr-0": {
             "ByJG\\PHPThread": "./"
