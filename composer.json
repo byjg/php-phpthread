@@ -11,11 +11,11 @@
         }
     ],
     "require": {
-		"ext-pcntl": "*"
-	},
-	"autoload": {
-        "psr-0": {
-            "ByJG\\PHPThread": "./"
+        "ext-pcntl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "ByJG\\PHPThread\\": "src/"
         }
     }
 }
