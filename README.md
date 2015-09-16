@@ -107,8 +107,27 @@ foreach ($threadPool->getThreads() as $thid)
 }
 
 echo "\n\nEnded!\n";
-
 ```
+
+*Important Note*
+
+In order to get working the getResult of the thread is necessary setup a file in '__DIR__/config/cacheconfig.php' with 
+the follow contents for setup the maxthread.
+
+```php
+<?php
+
+return [
+    'phpthread' => [
+        'instance' => '\\ByJG\\Cache\\ShmopCacheEngine',
+        'shmop' => [
+            'max-size' => 0x100000,
+            'default-permission' => '0700'
+        ]
+    ]
+];
+```
+
 
 ## FAQ
 

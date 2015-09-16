@@ -2,3 +2,4 @@
 /nbproject/
 composer.lock
 vendor
+config/cacheconfig.php

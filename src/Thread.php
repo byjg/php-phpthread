@@ -2,8 +2,10 @@
 
 namespace ByJG\PHPThread;
 
+use ByJG\Cache\CacheContext;
 use InvalidArgumentException;
 use RuntimeException;
+use stdClass;
 
 /**
  * Native Implementation of Threads in PHP.
@@ -15,21 +17,7 @@ use RuntimeException;
  */
 class Thread
 {
-
-    const maxResultSize = 0x100000; // 1024kb
-
-    /**
-     * The Id of the shared memory block
-     * @var long
-     */
-
-    protected $_shmKey;
-
-    /**
-     * The next id of the shared memory block available
-     * @var type
-     */
-    protected static $_lastShmKey = 0xf00;
+    protected $_threadKey;
 
     /**
      * constructor method
@@ -48,7 +36,6 @@ class Thread
             throw new InvalidArgumentException('The callback function is required.');
         }
 
-        $this->_shmKey = self::$_lastShmKey++;
         $this->setCallback($callback);
     }
 
@@ -96,6 +83,8 @@ class Thread
      */
     public function start()
     {
+        $this->_threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
+
         if (($this->_pid = pcntl_fork()) == -1) {
             throw new RuntimeException('Couldn\'t fork the process');
         }
@@ -107,7 +96,7 @@ class Thread
             // Child.
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
-            if ((count($args) == 1) && ($args[0] instanceof \stdClass) && (isset($args[0]->thread1234))) {
+            if ((count($args) == 1) && ($args[0] instanceof stdClass) && (isset($args[0]->thread1234))) {
                 $args = $args[0]->thread1234;
             }
             if (!empty($args)) {
@@ -133,21 +122,8 @@ class Thread
      */
     protected function saveResult($object)
     {
-        $serialized = serialize($object);
-        $size = strlen($serialized);
-        if ($size < self::maxResultSize) {
-            $shm_id = @shmop_open($this->_shmKey, "c", 0644, $size);
-            if (!$shm_id) {
-                throw new Exception("Couldn't create shared memory segment");
-            }
-            $shm_bytes_written = shmop_write($shm_id, $serialized, 0);
-            if ($shm_bytes_written != $size) {
-                warn("Couldn't write the entire length of data");
-            }
-            shmop_close($shm_id);
-        } else {
-            throw new \OverflowException('The response of the thread was greater then ' . self::maxResultSize . ' bytes.');
-        }
+        $cache = CacheContext::factory('phpthread');
+        $cache->set($this->_threadKey, $object);
     }
 
     /**
@@ -157,16 +133,18 @@ class Thread
      */
     public function getResult()
     {
-        $shm_id = @shmop_open($this->_shmKey, "a", 0644, self::maxResultSize);
-        if (!$shm_id) {
-            return null;
+        if (is_null($this->_threadKey)) {
+            return;
         }
 
-        $serialized = shmop_read($shm_id, 0, shmop_size($shm_id));
-        shmop_delete($shm_id);
-        shmop_close($shm_id);
+        $key = $this->_threadKey;
+        $this->_threadKey = null;
 
-        return unserialize($serialized);
+        $cache = CacheContext::factory('phpthread');
+        $result = $cache->get($key);
+        $cache->release($key);
+
+        return $result;
     }
 
     /**
