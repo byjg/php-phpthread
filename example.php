@@ -12,6 +12,9 @@ function Foo($t)
         sleep(1);
     }
     echo "Ending thread #$t" . PHP_EOL;
+
+    // Note: this line below require the file "config/cacheconfig.php" exists
+    return "$t: [[[[[[" . time() . "]]]]]]";
 }
 
 try {
@@ -45,6 +48,12 @@ try {
             }
         }
     }
+
+    // Note: this line below require the file "config/cacheconfig.php" exists
+    foreach ($t as $thread) {
+        echo "Result: " . $thread->getResult() . "\n";
+    }
+    
 } catch (Exception $e) {
     echo 'Exception: ' . $e . PHP_EOL;
 }
