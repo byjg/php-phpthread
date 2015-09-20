@@ -45,6 +45,7 @@ class Thread
      */
     public function isAlive()
     {
+        $status = null;
         return (pcntl_waitpid($this->_pid, $status, WNOHANG) === 0);
     }
 
@@ -56,24 +57,13 @@ class Thread
      */
     protected function setCallback($callback)
     {
-        if (is_array($callback)) {
-            if ((count($callback) == 2) && method_exists($callback[0], $callback[1]) && is_callable($callback)) {
-                $this->_callback = $callback;
-            } elseif (count($callback) != 2) {
-                throw new InvalidArgumentException("The parameter need to be a two elements array with a instance and a method of this instance or just a PHP static function");
-            } else {
-                if (is_object($callback[0])) {
-                    $className = get_class($callback[0]);
-                } else {
-                    $className = $callback[0];
-                }
-                throw new InvalidArgumentException("The method " . $className . "->" . $callback[1] . "() does not exists or not is callable");
-            }
-        } elseif (function_exists($callback) && is_callable($callback)) {
-            $this->_callback = $callback;
-        } else {
-            throw new InvalidArgumentException("$callback is not valid function");
+        $callableName = null;
+        
+        if (!is_callable($callback, false, $callableName)) {
+            throw new InvalidArgumentException("The method '$callableName' does not exists or not is callable");            
         }
+        
+        $this->_callback = $callback;
     }
 
     /**
@@ -158,6 +148,7 @@ class Thread
         if ($this->isAlive()) {
             posix_kill($this->_pid, $signal);
 
+            $status = null;
             if ($wait) {
                 pcntl_waitpid($this->_pid, $status);
             }
