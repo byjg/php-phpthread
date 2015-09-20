@@ -82,7 +82,7 @@ class ThreadPool
     {
         $count = 0;
 
-        foreach ($this->_threadInstance as $key => $value) {
+        foreach ($this->_threadInstance as $value) {
             $count += $value->isAlive() ? 1 : 0;
         }
 
@@ -102,59 +102,59 @@ class ThreadPool
     /**
      * Return a Thread object based on your id
      *
-     * @param string $id
+     * @param string $threadId
      * @return Thread
      */
-    protected function getThreadById($id)
+    protected function getThreadById($threadId)
     {
-        if (!isset($this->_threadInstance[$id])) {
+        if (!isset($this->_threadInstance[$threadId])) {
             return null;
         }
 
-        return $this->_threadInstance[$id];
+        return $this->_threadInstance[$threadId];
     }
 
     /**
      * Get the thread result from the Shared Memory
      *
-     * @param string $id
+     * @param string $threadId
      * @return mixed
      */
-    public function getThreadResult($id)
+    public function getThreadResult($threadId)
     {
-        if (!isset($this->_threadInstance[$id])) {
+        if (!isset($this->_threadInstance[$threadId])) {
             return null;
         }
 
-        return $this->_threadInstance[$id]->getResult();
+        return $this->_threadInstance[$threadId]->getResult();
     }
 
     /**
      * Check if the thread is running or not
      *
-     * @param string $id
+     * @param string $threadId
      * @return bool
      */
-    public function isAlive($id)
+    public function isAlive($threadId)
     {
-        $thread = $this->getThreadById($id);
+        $thread = $this->getThreadById($threadId);
 
         if (is_null($thread)) {
             return null;
-        } else {
-            return $thread->isAlive();
         }
+
+        return $thread->isAlive();
     }
 
     /**
      * Stops a specific thread
      *
-     * @param string $id
+     * @param string $threadId
      * @return boolean
      */
-    public function stopWorker($id)
+    public function stopWorker($threadId)
     {
-        $thread = $this->getThreadById($id);
+        $thread = $this->getThreadById($threadId);
 
         if (is_null($thread)) {
             return null;
