@@ -32,7 +32,7 @@ class Thread
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
         }
 
-        if ($callback == null) {
+        if ($callback === null) {
             throw new InvalidArgumentException('The callback function is required.');
         }
 
