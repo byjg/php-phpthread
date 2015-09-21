@@ -1,4 +1,7 @@
 # phpthread
+[![Code Climate](https://codeclimate.com/github/byjg/phpthread/badges/gpa.svg)](https://codeclimate.com/github/byjg/phpthread)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f/mini.png)](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/phpthread/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
 
 Native Implementation of Threads in PHP.
 
