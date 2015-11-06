@@ -133,7 +133,7 @@ return [
 
 ## Install
 
-Just type: `composer require "byjg/anydataset=~1.1"`
+Just type: `composer require "byjg/phpthread=~1.1"`
 
 ## FAQ
 
