@@ -131,6 +131,9 @@ return [
 ];
 ```
 
+## Install
+
+Just type: `composer require "byjg/anydataset=~1.1"`
 
 ## FAQ
 
