@@ -90,6 +90,16 @@ class ThreadPool
     }
 
     /**
+     * Wait until all workers are finished
+     */
+    public function waitWorkers()
+    {
+        while ($this->activeWorkers() > 0) {
+            sleep(1);
+        }
+    }
+
+    /**
      * Return a list of threads
      *
      * @return array
