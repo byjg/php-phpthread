@@ -1,5 +1,4 @@
-/nbproject/private/
-/nbproject/
+nbproject/private/
 composer.lock
 vendor
 config/cacheconfig.php
