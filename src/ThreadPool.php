@@ -24,18 +24,14 @@ class ThreadPool
     /**
      * Queue a new thread worker
      *
-     * @param mixed $callback
+     * @param callable $callback
      * @param array $params The thread parameters
      * @param string $thid The Thread id to identify the ID
      * @return Thread
      * @throws \InvalidArgumentException
      */
-    public function queueWorker($callback, $params = null, $thid = null)
+    public function queueWorker(callable $callback, $params = null, $thid = null)
     {
-        if (!is_string($callback) && (is_array($callback) && count($callback) != 2)) {
-            throw new \InvalidArgumentException('The callback needs to be a value compatible with call_user_func()');
-        }
-
         if (!is_null($params) && !is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
         }
@@ -63,10 +59,7 @@ class ThreadPool
         foreach ($this->_threadList as $key => $value) {
             $thread = new Thread($value->callback);
 
-            $params = new \stdClass;
-            $params->thread1234 = $value->params;
-
-            $thread->start($params);
+            call_user_func_array([$thread, 'start'], $value->params);
             $thr[$key] = $thread;
         }
 

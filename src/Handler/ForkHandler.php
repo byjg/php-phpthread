@@ -67,9 +67,6 @@ class ForkHandler implements ThreadInterface
             // Child.
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
-            if ((count($args) == 1) && ($args[0] instanceof stdClass) && (isset($args[0]->thread1234))) {
-                $args = $args[0]->thread1234;
-            }
             if (!empty($args)) {
                 $return = call_user_func_array($this->_callback, $args);
             } else {
