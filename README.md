@@ -17,10 +17,11 @@ and choose the most suitable handler for processing the threads. The thread inte
 - Most of the fork implementation was based on the post "http://villavu.com/forum/showthread.php?t=73623" by the "superuser"
 - Tales Santos (tsantos84) contributed on the base of the Thread ZTS by creating the code base and solving some specific thread problems. Thanks!!!!  
 
-# Basic Usage
+# Usage
+
+## Assume for the examples below the function 'Foo'
 
 ```php
-<?php
 require_once('vendor/autoload.php');
 
 // Method to be executed in a thread
@@ -34,39 +35,32 @@ function Foo($t)
         sleep(1);
     }
     echo "Ending thread #$t" . PHP_EOL;
-}
-
-try
-{
-    $t = array();
-
-    // Create the threads
-    for ($i = 0; $i < 10; $i++)
-    {
-        // Create a new instance of the Thread class, pointing to "Foo" function
-        $thr = new ByJG\PHPThread\Thread('Foo');
-
-        // Started the method "Foo" in a tread
-        $thr->start($i);
-
-        // Save the thread reference to be manipulate
-        $t[] = $thr;
-    }
-
-    $done = false;
-
-    // It is important to check if all threads are done
-    // otherwise will be terminate when the php script is finished;
-    foreach ($t as $thread)
-    {
-        $thread->waitFinish();
-    }
-} catch (\Exception $e) {
-    echo 'Exception: ' . $e . PHP_EOL;
+    
+    return $t;
 }
 ```
 
-# Thread Pool Usage
+## Basic Thread Usage
+
+```php
+// Create the Threads passing a callable
+$thread1 = new ByJG\PHPThread\Thread('Foo');
+$thread2 = new ByJG\PHPThread\Thread('Foo');
+
+// Start the threads
+$thread1->start(1);
+$thread2->start(2);
+
+// Wait the threads to finish
+$thread1->waitFinish();
+$thread2->waitFinish();
+
+// Get the thread result
+echo "Thread Result 1: " . $thread1->getResult();
+echo "Thread Result 2: " . $thread2->getResult();
+```
+
+## Thread Pool Usage
 
 You can create a pool of threads.
 
@@ -74,12 +68,9 @@ You can create a pool of threads.
 // Create a instance of the ThreadPool
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
-// Create the threads
-for ($i = 0; $i < 10; $i++)
-{
-    // Queue a worker pointing to "Foo" function and pass the required parameters
-    $threadPool->queueWorker('Foo', [ $i ]);
-}
+// Create and queue the threads
+$threadPool->queueWorker('Foo', [ 1 ]);
+$threadPool->queueWorker('Foo', [ 2 ]);
 
 // Starts all the threads in the queue
 $threadPool->startWorkers();
@@ -88,8 +79,7 @@ $threadPool->startWorkers();
 $threadPool->waitWorkers();
 
 // Get the return value from the thread.
-foreach ($threadPool->getThreads() as $thid)
-{
+foreach ($threadPool->getThreads() as $thid) {
     echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
 }
 
