@@ -26,13 +26,13 @@ class Thread
     /**
      * constructor method
      *
-     * @param mixed $callback string with the function name or a array with the instance and the method name
+     * @param mixed $callable string with the function name or a array with the instance and the method name
      * @throws RuntimeException
      * @throws InvalidArgumentException
      */
-    public function __construct(callable $callback)
+    public function __construct(callable $callable)
     {
-        $this->getThreadInstance()->setCallback($callback);
+        $this->getThreadInstance()->setCallable($callable);
     }
 
     /**

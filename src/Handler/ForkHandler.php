@@ -5,7 +5,6 @@ namespace ByJG\PHPThread\Handler;
 use ByJG\Cache\CacheContext;
 use InvalidArgumentException;
 use RuntimeException;
-use stdClass;
 
 /**
  * Native Implementation of Threads in PHP.
@@ -18,7 +17,8 @@ use stdClass;
 class ForkHandler implements ThreadInterface
 {
     protected $_threadKey;
-    private $_callback, $_pid;
+    private $callable;
+    private $_pid;
 
     /**
      * constructor method
@@ -39,12 +39,12 @@ class ForkHandler implements ThreadInterface
     /**
      * Private function for set the method will be forked;
      *
-     * @param callable $callback string with the function name or a array with the instance and the method name
+     * @param callable $callable string with the function name or a array with the instance and the method name
      * @return mixed|void
      */
-    public function setCallback(callable $callback)
+    public function setCallable(callable $callable)
     {
-        $this->_callback = $callback;
+        $this->callable = $callable;
     }
 
     /**
@@ -68,9 +68,9 @@ class ForkHandler implements ThreadInterface
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
             if (!empty($args)) {
-                $return = call_user_func_array($this->_callback, $args);
+                $return = call_user_func_array($this->callable, $args);
             } else {
-                $return = call_user_func($this->_callback);
+                $return = call_user_func($this->callable);
             }
 
             if (!is_null($return)) {

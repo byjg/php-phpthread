@@ -36,8 +36,8 @@ interface ThreadInterface
 
     /**
      * Set the thread callable method
-     * @param callable $callback
+     * @param callable $callable
      * @return mixed
      */
-    public function setCallback(callable $callback);
+    public function setCallable(callable $callable);
 }

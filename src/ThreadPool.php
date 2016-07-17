@@ -24,13 +24,13 @@ class ThreadPool
     /**
      * Queue a new thread worker
      *
-     * @param callable $callback
+     * @param callable $callable
      * @param array $params The thread parameters
      * @param string $thid The Thread id to identify the ID
      * @return Thread
      * @throws \InvalidArgumentException
      */
-    public function queueWorker(callable $callback, $params = null, $thid = null)
+    public function queueWorker(callable $callable, $params = null, $thid = null)
     {
         if (!is_null($params) && !is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
@@ -41,7 +41,7 @@ class ThreadPool
         }
 
         $data = new \stdClass;
-        $data->callback = $callback;
+        $data->callable = $callable;
         $data->params = $params;
 
         $this->_threadList[$thid] = $data;
@@ -57,7 +57,7 @@ class ThreadPool
         $thr = array();
 
         foreach ($this->_threadList as $key => $value) {
-            $thread = new Thread($value->callback);
+            $thread = new Thread($value->callable);
 
             call_user_func_array([$thread, 'start'], $value->params);
             $thr[$key] = $thread;
