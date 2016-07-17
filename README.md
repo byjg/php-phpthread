@@ -3,19 +3,19 @@
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f/mini.png)](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/phpthread/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
 
-Native Implementation of Threads in PHP.
+Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation;
+ 
+This class detects automatically if PHP was compiled:
+ 
+ - with ZTS (--enable-maintainer-zts or --enable-zts) and the extension pthreads (works on Windows also) 
+ - with the Process Controle (--enable-pcntl)
+    
+and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
 
-A class to spawn a thread. Only works in *nix environments, as Windows platform is missing libpcntl. Forks the process.
+### Some Informations
 
-This Class was originally was developed by "Superuser"
-
-Original Version ID: Thread.class.php 23 2012-01-23 09:40:32Z superuser
-
-This file was changed by JG based on the post at:
- * http://villavu.com/forum/showthread.php?t=73623
-
-Install in ubuntu:
- * http://ubuntuforums.org/showthread.php?t=549953
+- Most of the fork implementation was based on the post "http://villavu.com/forum/showthread.php?t=73623" by the "superuser"
+- Tales Santos (tsantos84) contributed on the base of the Thread ZTS by creating the code base and solving some specific thread problems. Thanks!!!!  
 
 # Basic Usage
 
