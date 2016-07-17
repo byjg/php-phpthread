@@ -18,6 +18,7 @@ use stdClass;
 class Thread
 {
     protected $_threadKey;
+    private $_callback, $_pid;
 
     /**
      * constructor method
@@ -40,16 +41,6 @@ class Thread
     }
 
     /**
-     * Check if the forked process is alive
-     * @return bool
-     */
-    public function isAlive()
-    {
-        $status = null;
-        return (pcntl_waitpid($this->_pid, $status, WNOHANG) === 0);
-    }
-
-    /**
      * Private function for set the method will be forked;
      *
      * @param string $callback string with the function name or a array with the instance and the method name
@@ -58,11 +49,11 @@ class Thread
     protected function setCallback($callback)
     {
         $callableName = null;
-        
+
         if (!is_callable($callback, false, $callableName)) {
-            throw new InvalidArgumentException("The method '$callableName' does not exists or not is callable");            
+            throw new InvalidArgumentException("The method '$callableName' does not exists or not is callable");
         }
-        
+
         $this->_callback = $callback;
     }
 
@@ -118,13 +109,13 @@ class Thread
 
     /**
      * Get the thread result from the shared memory block and erase it
-     * 
+     *
      * @return mixed
      */
     public function getResult()
     {
         if (is_null($this->_threadKey)) {
-            return;
+            return null;
         }
 
         $key = $this->_threadKey;
@@ -156,6 +147,16 @@ class Thread
     }
 
     /**
+     * Check if the forked process is alive
+     * @return bool
+     */
+    public function isAlive()
+    {
+        $status = null;
+        return (pcntl_waitpid($this->_pid, $status, WNOHANG) === 0);
+    }
+
+    /**
      * Handle the signal to the thread
      *
      * @param int $signal
@@ -167,7 +168,5 @@ class Thread
                 exit(0);
         }
     }
-
-    private $_callback, $_pid;
 
 }
