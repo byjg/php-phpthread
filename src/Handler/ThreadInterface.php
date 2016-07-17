@@ -40,4 +40,11 @@ interface ThreadInterface
      * @return mixed
      */
     public function setCallable(callable $callable);
+
+    /**
+     * Wait for the thread finish and join to main thread;
+     *
+     * @return mixed
+     */
+    public function waitFinish();
 }

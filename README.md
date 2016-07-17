@@ -20,6 +20,7 @@ and choose the most suitable handler for processing the threads. The thread inte
 # Basic Usage
 
 ```php
+<?php
 require_once('vendor/autoload.php');
 
 // Method to be executed in a thread
@@ -56,24 +57,11 @@ try
 
     // It is important to check if all threads are done
     // otherwise will be terminate when the php script is finished;
-    while (!$done)
+    foreach ($t as $thread)
     {
-        sleep(1);
-
-        $done = true;
-
-        foreach ($t as $thread)
-        {
-            if ($thread->isAlive())
-            {
-                $done = false;
-                break;
-            }
-        }
+        $thread->waitFinish();
     }
-}
-catch (Exception $e)
-{
+} catch (\Exception $e) {
     echo 'Exception: ' . $e . PHP_EOL;
 }
 ```
@@ -97,11 +85,7 @@ for ($i = 0; $i < 10; $i++)
 $threadPool->startWorkers();
 
 // Wait until there is no more active workers
-while($threadPool->activeWorkers() > 0)
-{
-    echo "Active Workers : " . $threadPool->activeWorkers() . "\n";
-    sleep(1);
-}
+$threadPool->waitWorkers();
 
 // Get the return value from the thread.
 foreach ($threadPool->getThreads() as $thid)
@@ -112,9 +96,9 @@ foreach ($threadPool->getThreads() as $thid)
 echo "\n\nEnded!\n";
 ```
 
-*Important Note*
+**Important Note for the FORK implementation**
 
-In order to get working the getResult of the thread is necessary setup a file in '__DIR__/config/cacheconfig.php' with 
+In order to get working the getResult of the fork implementation is necessary setup a file in '__DIR__/config/cacheconfig.php' with 
 the follow contents for setup the maxthread.
 
 ```php

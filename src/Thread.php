@@ -97,4 +97,8 @@ class Thread
         return $this->getThreadInstance()->isAlive();
     }
 
+    public function waitFinish()
+    {
+        $this->getThreadInstance()->waitFinish();
+    }
 }

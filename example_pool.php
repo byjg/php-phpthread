@@ -31,6 +31,7 @@ try {
     $threadPool->startWorkers();
 
     // Wait until there is no more active workers
+    // You can use $threadPool->waitWorkers() instead the loop below
     while ($threadPool->activeWorkers() > 0) {
         echo "Active Workers : " . $threadPool->activeWorkers() . "\n";
         sleep(1);

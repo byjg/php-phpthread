@@ -71,8 +71,8 @@ class ThreadPool
      */
     public function waitWorkers()
     {
-        while ($this->activeWorkers() > 0) {
-            sleep(1);
+        foreach ($this->_threadInstance as $value) {
+            $value->waitFinish();
         }
     }
 

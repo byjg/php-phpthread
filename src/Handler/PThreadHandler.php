@@ -138,4 +138,9 @@ class PThreadHandler extends \Thread implements ThreadInterface
     {
         $this->callable = $callable;
     }
+
+    public function waitFinish()
+    {
+        $this->join();
+    }
 }

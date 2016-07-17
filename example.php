@@ -36,17 +36,8 @@ try {
 
     // It is important to check if all threads are done
     // otherwise will be terminate when the php script is finished;
-    while (!$done) {
-        sleep(1);
-
-        $done = true;
-
-        foreach ($t as $thread) {
-            if ($thread->isAlive()) {
-                $done = false;
-                break;
-            }
-        }
+    foreach ($t as $thread) {
+        $thread->waitFinish();
     }
 
     // Note: this line below require the file "config/cacheconfig.php" exists

@@ -1,23 +1,23 @@
 {
-    "name": "byjg/phpthread",
-    "description": "Native Implementation of Threads in PHP.",
-    "authors": [
-        {
-            "name": "Joao Gilberto Magalhães",
-            "email": "joao@byjg.com.br"
-        },
-        {
-            "name": "Superuser"
-        }
-    ],
-    "require": {
-        "byjg/cache-engine": "~1.0",
-        "ext-pcntl": "*"
-    },
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "ByJG\\PHPThread\\": "src/"
-        }
+  "name": "byjg/phpthread",
+  "description": "Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation.",
+  "authors": [
+    {
+      "name": "Joao Gilberto Magalhães",
+      "email": "joao@byjg.com.br"
     }
+  ],
+  "require": {
+    "byjg/cache-engine": "~1.0"
+  },
+  "suggest": {
+    "ext-pcntl": "*",
+    "ext-pthreads": "*"
+  },
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "ByJG\\PHPThread\\": "src/"
+    }
+  }
 }

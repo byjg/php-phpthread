@@ -156,4 +156,8 @@ class ForkHandler implements ThreadInterface
         }
     }
 
+    public function waitFinish()
+    {
+        while ($this->isAlive()) {}
+    }
 }
