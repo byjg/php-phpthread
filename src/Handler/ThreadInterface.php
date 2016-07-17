@@ -1,0 +1,43 @@
+<?php
+
+namespace ByJG\PHPThread\Handler;
+
+interface ThreadInterface
+{
+
+    /**
+     * Start the thread
+     *
+     * @throws \RuntimeException
+     */
+    public function start();
+
+    /**
+     * Get the thread result
+     *
+     * @return mixed
+     */
+    public function getResult();
+
+    /**
+     * Kill a thread
+     *
+     * @param int $signal
+     * @param bool $wait
+     */
+    public function stop($signal = SIGKILL, $wait = false);
+
+    /**
+     * Checkif the thread is not Terminated
+     *
+     * @return bool
+     */
+    public function isAlive();
+
+    /**
+     * Set the thread callable method
+     * @param callable $callback
+     * @return mixed
+     */
+    public function setCallback(callable $callback);
+}
