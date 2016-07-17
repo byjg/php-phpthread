@@ -37,9 +37,12 @@ class PThreadHandler extends \Thread implements ThreadInterface
             return $this->loader;
         }
 
-        $path = __DIR__ . '/../../vendor/autoload.php';
+        $path = realpath(__DIR__ . '/../../vendor/autoload.php');
         if (!file_exists($path)) {
-            $path = __DIR__ . '/../../vendor/autoload.php';
+            $path = realpath(__DIR__ . '/../../../autoload.php');
+            if (!file_exists($path)) {
+                throw new \RuntimeException("Autoload path '$path' not found");
+            }
         }
         $this->loader = require_once "$path";
 
@@ -47,7 +50,7 @@ class PThreadHandler extends \Thread implements ThreadInterface
     }
 
     /**
-     *
+     * Here you are in a threaded environment
      */
     public function run()
     {
