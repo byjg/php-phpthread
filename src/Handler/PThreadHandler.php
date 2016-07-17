@@ -20,6 +20,8 @@ class PThreadHandler extends \Thread implements ThreadInterface
 
     private $result;
 
+    private $hasError;
+
     /**
      * Thread constructor.
      */
@@ -37,16 +39,21 @@ class PThreadHandler extends \Thread implements ThreadInterface
             return $this->loader;
         }
 
-        $path = realpath(__DIR__ . '/../../vendor/autoload.php');
+        $path = __DIR__ . '/../../vendor/autoload.php';
         if (!file_exists($path)) {
-            $path = realpath(__DIR__ . '/../../../autoload.php');
+            $path = __DIR__ . '/../../../../autoload.php';
             if (!file_exists($path)) {
                 throw new \RuntimeException("Autoload path '$path' not found");
             }
         }
-        $this->loader = require_once "$path";
+        $this->loader = require("$path");
 
         return $this->loader;
+    }
+
+    protected function threadError()
+    {
+        $this->hasError = error_get_last();
     }
 
     /**
@@ -54,9 +61,11 @@ class PThreadHandler extends \Thread implements ThreadInterface
      */
     public function run()
     {
+        register_shutdown_function([$this, 'threadError']);
+
         $this->getLoader()->register();
 
-        $this->result = call_user_func($this->callable, $this->args);
+        $this->result = call_user_func_array($this->callable, $this->args);
     }
 
     /**
@@ -74,9 +83,20 @@ class PThreadHandler extends \Thread implements ThreadInterface
      * Get the thread result
      *
      * @return mixed
+     * @throws \RuntimeException
      */
     public function getResult()
     {
+        if ($this->hasError) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Thread error: "%s", in "%s" at line %d. <<--- ',
+                    $this->hasError['message'],
+                    $this->hasError['file'],
+                    $this->hasError['line']
+                )
+            );
+        }
         return $this->result;
     }
 
@@ -98,7 +118,7 @@ class PThreadHandler extends \Thread implements ThreadInterface
      */
     public function isAlive()
     {
-        if (!$this->isTerminated()) {
+        if ($this->isRunning()) {
             return true;
         }
 
