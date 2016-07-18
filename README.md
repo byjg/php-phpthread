@@ -27,7 +27,7 @@ require_once('vendor/autoload.php');
 // Method to be executed in a thread
 class Foo
 {
-    public function boo($t)
+    public function bar($t)
     {
         echo "Starint thread #$t" . PHP_EOL;;
         sleep(1 * rand(1, 5));
