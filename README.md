@@ -19,33 +19,39 @@ and choose the most suitable handler for processing the threads. The thread inte
 
 # Usage
 
-## Assume for the examples below the function 'Foo'
+## Assume for the examples below the class 'Foo' and the method 'bar'
 
 ```php
 require_once('vendor/autoload.php');
 
 // Method to be executed in a thread
-function Foo($t)
+class Foo
 {
-    echo "Starint thread #$t" . PHP_EOL;;
-    sleep(1 * rand(1, 5));
-    for ($i = 0; $i < 10; $i++)
+    public function boo($t)
     {
-        echo "Hello from thread #$t, i=$i" . PHP_EOL;
-        sleep(1);
-    }
-    echo "Ending thread #$t" . PHP_EOL;
+        echo "Starint thread #$t" . PHP_EOL;;
+        sleep(1 * rand(1, 5));
+        for ($i = 0; $i < 10; $i++)
+        {
+            echo "Hello from thread #$t, i=$i" . PHP_EOL;
+            sleep(1);
+        }
+        echo "Ending thread #$t" . PHP_EOL;
     
-    return $t;
+        return $t;
+    }
 }
 ```
 
 ## Basic Thread Usage
 
 ```php
+// Create a basic instance:
+$foo = new Foo();
+
 // Create the Threads passing a callable
-$thread1 = new ByJG\PHPThread\Thread('Foo');
-$thread2 = new ByJG\PHPThread\Thread('Foo');
+$thread1 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
+$thread2 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
 
 // Start the threads
 $thread1->start(1);
@@ -65,12 +71,15 @@ echo "Thread Result 2: " . $thread2->getResult();
 You can create a pool of threads.
 
 ```php
+// Create a basic instance:
+$foo = new Foo();
+
 // Create a instance of the ThreadPool
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
 // Create and queue the threads
-$threadPool->queueWorker('Foo', [ 1 ]);
-$threadPool->queueWorker('Foo', [ 2 ]);
+$threadPool->queueWorker( [ $foo, 'bar' ] , [ 1 ]);
+$threadPool->queueWorker( [ $foo, 'bar' ], [ 2 ]);
 
 // Starts all the threads in the queue
 $threadPool->startWorkers();
