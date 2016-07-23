@@ -24,19 +24,15 @@ class ThreadPool
     /**
      * Queue a new thread worker
      *
-     * @param mixed $callback
+     * @param callable $callable
      * @param array $params The thread parameters
      * @param string $thid The Thread id to identify the ID
-     * @return type
+     * @return Thread
      * @throws \InvalidArgumentException
      */
-    public function queueWorker($callback, $params = null, $thid = null)
+    public function queueWorker(callable $callable, $params = [], $thid = null)
     {
-        if (!is_string($callback) && (is_array($callback) && count($callback) != 2)) {
-            throw new \InvalidArgumentException('The callback needs to be a value compatible with call_user_func()');
-        }
-
-        if (!is_null($params) && !is_array($params)) {
+        if (!is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
         }
 
@@ -45,7 +41,7 @@ class ThreadPool
         }
 
         $data = new \stdClass;
-        $data->callback = $callback;
+        $data->callable = $callable;
         $data->params = $params;
 
         $this->_threadList[$thid] = $data;
@@ -61,16 +57,23 @@ class ThreadPool
         $thr = array();
 
         foreach ($this->_threadList as $key => $value) {
-            $thread = new Thread($value->callback);
+            $thread = new Thread($value->callable);
 
-            $params = new \stdClass;
-            $params->thread1234 = $value->params;
-
-            $thread->start($params);
+            call_user_func_array([$thread, 'execute'], $value->params);
             $thr[$key] = $thread;
         }
 
         $this->_threadInstance = $thr;
+    }
+
+    /**
+     * Wait until all workers are finished
+     */
+    public function waitWorkers()
+    {
+        foreach ($this->_threadInstance as $value) {
+            $value->waitFinish();
+        }
     }
 
     /**
@@ -90,16 +93,6 @@ class ThreadPool
     }
 
     /**
-     * Wait until all workers are finished
-     */
-    public function waitWorkers()
-    {
-        while ($this->activeWorkers() > 0) {
-            sleep(1);
-        }
-    }
-
-    /**
      * Return a list of threads
      *
      * @return array
@@ -107,21 +100,6 @@ class ThreadPool
     public function getThreads()
     {
         return array_keys($this->_threadInstance);
-    }
-
-    /**
-     * Return a Thread object based on your id
-     *
-     * @param string $threadId
-     * @return Thread
-     */
-    protected function getThreadById($threadId)
-    {
-        if (!isset($this->_threadInstance[$threadId])) {
-            return null;
-        }
-
-        return $this->_threadInstance[$threadId];
     }
 
     /**
@@ -154,6 +132,21 @@ class ThreadPool
         }
 
         return $thread->isAlive();
+    }
+
+    /**
+     * Return a Thread object based on your id
+     *
+     * @param string $threadId
+     * @return Thread
+     */
+    protected function getThreadById($threadId)
+    {
+        if (!isset($this->_threadInstance[$threadId])) {
+            return null;
+        }
+
+        return $this->_threadInstance[$threadId];
     }
 
     /**

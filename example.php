@@ -26,7 +26,7 @@ try {
         $thr = new \ByJG\PHPThread\Thread('Foo');
 
         // Started the method "Foo" in a tread
-        $thr->start($i);
+        $thr->execute($i);
 
         // Save the thread reference to be manipulate
         $t[] = $thr;
@@ -36,17 +36,8 @@ try {
 
     // It is important to check if all threads are done
     // otherwise will be terminate when the php script is finished;
-    while (!$done) {
-        sleep(1);
-
-        $done = true;
-
-        foreach ($t as $thread) {
-            if ($thread->isAlive()) {
-                $done = false;
-                break;
-            }
-        }
+    foreach ($t as $thread) {
+        $thread->waitFinish();
     }
 
     // Note: this line below require the file "config/cacheconfig.php" exists
