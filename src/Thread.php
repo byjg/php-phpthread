@@ -61,10 +61,10 @@ class Thread
      *
      * @throws RuntimeException
      */
-    public function start()
+    public function execute()
     {
         $args = func_get_args();
-        call_user_func_array([$this->getThreadInstance(), 'start'], $args);
+        call_user_func_array([$this->getThreadInstance(), 'execute'], $args);
     }
 
     /**

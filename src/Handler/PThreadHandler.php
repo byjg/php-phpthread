@@ -73,7 +73,7 @@ class PThreadHandler extends \Thread implements ThreadInterface
      *
      * @throws \RuntimeException
      */
-    public function start()
+    public function execute()
     {
         $this->args = func_get_args();
         return parent::start();
@@ -87,7 +87,7 @@ class PThreadHandler extends \Thread implements ThreadInterface
      */
     public function getResult()
     {
-        if ($this->hasError) {
+        if ($this->hasError && ( $this->hasError['type'] == E_ERROR || $this->hasError['type'] == E_USER_ERROR )) {
             throw new \RuntimeException(
                 sprintf(
                     'Thread error: "%s", in "%s" at line %d. <<--- ',

@@ -52,7 +52,7 @@ class ForkHandler implements ThreadInterface
      *
      * @throws RuntimeException
      */
-    public function start()
+    public function execute()
     {
         $this->_threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 

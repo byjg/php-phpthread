@@ -10,7 +10,7 @@ interface ThreadInterface
      *
      * @throws \RuntimeException
      */
-    public function start();
+    public function execute();
 
     /**
      * Get the thread result
