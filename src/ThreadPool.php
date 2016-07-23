@@ -59,7 +59,7 @@ class ThreadPool
         foreach ($this->_threadList as $key => $value) {
             $thread = new Thread($value->callable);
 
-            call_user_func_array([$thread, 'start'], $value->params);
+            call_user_func_array([$thread, 'execute'], $value->params);
             $thr[$key] = $thread;
         }
 
