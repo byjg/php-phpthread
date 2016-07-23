@@ -16,7 +16,7 @@ use RuntimeException;
  *
  * Forks the process.
  */
-class Thread
+class Thread implements ThreadInterface
 {
     /**
      * @var ThreadInterface
@@ -32,7 +32,7 @@ class Thread
      */
     public function __construct(callable $callable)
     {
-        $this->getThreadInstance()->setCallable($callable);
+        $this->setCallable($callable);
     }
 
     /**
@@ -100,5 +100,15 @@ class Thread
     public function waitFinish()
     {
         $this->getThreadInstance()->waitFinish();
+    }
+
+    /**
+     * Set the thread callable method
+     * @param callable $callable
+     * @return mixed
+     */
+    public function setCallable(callable $callable)
+    {
+        $this->getThreadInstance()->setCallable($callable);
     }
 }

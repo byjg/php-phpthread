@@ -26,7 +26,7 @@ try {
         $thr = new \ByJG\PHPThread\Thread('Foo');
 
         // Started the method "Foo" in a tread
-        $thr->start($i);
+        $thr->execute($i);
 
         // Save the thread reference to be manipulate
         $t[] = $thr;

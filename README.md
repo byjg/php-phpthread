@@ -53,9 +53,9 @@ $foo = new Foo();
 $thread1 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
 $thread2 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
 
-// Start the threads
-$thread1->start(1);
-$thread2->start(2);
+// Start the threads and passing parameters
+$thread1->execute(1);
+$thread2->execute(2);
 
 // Wait the threads to finish
 $thread1->waitFinish();
@@ -77,7 +77,7 @@ $foo = new Foo();
 // Create a instance of the ThreadPool
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
-// Create and queue the threads
+// Create and queue the threads with call parameters
 $threadPool->queueWorker( [ $foo, 'bar' ] , [ 1 ]);
 $threadPool->queueWorker( [ $foo, 'bar' ], [ 2 ]);
 
@@ -116,7 +116,12 @@ return [
 
 ## Install
 
-Just type: `composer require "byjg/phpthread=1.2.*"`
+Just type: `composer require "byjg/phpthread=2.0.*"`
+
+### Major changes from 1.* to 2.*
+
+* Method Thread::start() renamed to Thread::execute()
+* Implemented PThread and Fork as a Polyfill class
 
 ## FAQ
 
