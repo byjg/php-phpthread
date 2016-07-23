@@ -30,9 +30,9 @@ class ThreadPool
      * @return Thread
      * @throws \InvalidArgumentException
      */
-    public function queueWorker(callable $callable, $params = null, $thid = null)
+    public function queueWorker(callable $callable, $params = [], $thid = null)
     {
-        if (!is_null($params) && !is_array($params)) {
+        if (!is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
         }
 
