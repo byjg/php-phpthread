@@ -20,8 +20,6 @@ class PThreadHandler extends \Thread implements ThreadInterface
 
     private $result;
 
-    private $hasError;
-
     /**
      * Thread constructor.
      */
@@ -51,11 +49,6 @@ class PThreadHandler extends \Thread implements ThreadInterface
         return $this->loader;
     }
 
-    protected function threadError()
-    {
-        $this->hasError = error_get_last();
-    }
-
     /**
      * Here you are in a threaded environment
      */
@@ -66,11 +59,15 @@ class PThreadHandler extends \Thread implements ThreadInterface
         $this->getLoader()->register();
 
         $callable = $this->callable;
-        if (!is_string($callable)){
+        if (!is_string($callable)) {
             $callable = (array) $this->callable;
         }
 
-        $this->result = call_user_func_array($callable, (array) $this->args);
+        try {
+            $this->result = call_user_func_array($callable, (array)$this->args);
+        } catch (\Exception $ex) {
+            $this->result = $ex;
+        }
     }
 
     /**
@@ -88,19 +85,12 @@ class PThreadHandler extends \Thread implements ThreadInterface
      * Get the thread result
      *
      * @return mixed
-     * @throws \RuntimeException
+     * @throws \Exception
      */
     public function getResult()
     {
-        if ($this->hasError && ( $this->hasError['type'] == E_ERROR || $this->hasError['type'] == E_USER_ERROR )) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Thread error: "%s", in "%s" at line %d. <<--- ',
-                    $this->hasError['message'],
-                    $this->hasError['file'],
-                    $this->hasError['line']
-                )
-            );
+        if ($this->result instanceof \Exception) {
+            throw $this->result;
         }
         return $this->result;
     }

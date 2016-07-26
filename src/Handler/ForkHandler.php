@@ -67,14 +67,20 @@ class ForkHandler implements ThreadInterface
             // Child.
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
-            if (!empty($args)) {
-                $return = call_user_func_array($this->callable, $args);
-            } else {
-                $return = call_user_func($this->callable);
+
+            $callable = $this->callable;
+            if (!is_string($callable)) {
+                $callable = (array) $this->callable;
             }
 
-            if (!is_null($return)) {
-                $this->saveResult($return);
+            try {
+                $return = call_user_func_array($callable, (array)$args);
+
+                if (!is_null($return)) {
+                    $this->saveResult($return);
+                }
+            } catch (\Exception $ex) {
+                $this->saveResult($ex);
             }
 
             exit(0);
@@ -98,6 +104,7 @@ class ForkHandler implements ThreadInterface
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
+     * @throws \Exception
      */
     public function getResult()
     {
@@ -111,6 +118,10 @@ class ForkHandler implements ThreadInterface
         $cache = CacheContext::factory('phpthread');
         $result = $cache->get($key);
         $cache->release($key);
+
+        if ($result instanceof \Exception) {
+            throw $result;
+        }
 
         return $result;
     }
@@ -158,6 +169,6 @@ class ForkHandler implements ThreadInterface
 
     public function waitFinish()
     {
-        while ($this->isAlive()) {}
+        pcntl_wait($status);
     }
 }
