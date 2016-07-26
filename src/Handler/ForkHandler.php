@@ -73,20 +73,44 @@ class ForkHandler implements ThreadInterface
                 $callable = (array) $this->callable;
             }
 
-            try {
-                $return = call_user_func_array($callable, (array)$args);
-
-                if (!is_null($return)) {
-                    $this->saveResult($return);
-                }
-            } catch (\Exception $ex) {
-                $this->saveResult($ex);
+            if (PHP_VERSION_ID < 70000) {
+                $this->runPhp5($callable, $args);
+            } else {
+                $this->runPhp7($callable, $args);
             }
 
             exit(0);
         }
 
         // Parent.
+    }
+
+    protected function runPhp5($callable, $args)
+    {
+        try {
+            $return = call_user_func_array($callable, (array)$args);
+
+            if (!is_null($return)) {
+                $this->saveResult($return);
+            }
+        } catch (\Exception $ex) {
+            $this->saveResult($ex);
+        }
+    }
+
+    protected function runPhp7($callable, $args)
+    {
+        try {
+            $return = call_user_func_array($callable, (array)$args);
+
+            if (!is_null($return)) {
+                $this->saveResult($return);
+            }
+        } catch (\Error $ex) {
+            $this->saveResult($ex);
+        } catch (\Exception $ex) {
+            $this->saveResult($ex);
+        }
     }
 
     /**
@@ -104,7 +128,8 @@ class ForkHandler implements ThreadInterface
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
-     * @throws \Exception
+     * @throws \Error
+     * @throws object
      */
     public function getResult()
     {
@@ -119,7 +144,9 @@ class ForkHandler implements ThreadInterface
         $result = $cache->get($key);
         $cache->release($key);
 
-        if ($result instanceof \Exception) {
+        if (PHP_VERSION_ID >= 70000 && $result instanceof \Error) {
+            throw $result;
+        } else if ($result instanceof \Exception) {
             throw $result;
         }
 
