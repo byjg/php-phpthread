@@ -65,7 +65,12 @@ class PThreadHandler extends \Thread implements ThreadInterface
 
         $this->getLoader()->register();
 
-        $this->result = call_user_func_array($this->callable, $this->args);
+        $callable = $this->callable;
+        if (!is_string($callable)){
+            $callable = (array) $this->callable;
+        }
+
+        $this->result = call_user_func_array($callable, (array) $this->args);
     }
 
     /**
