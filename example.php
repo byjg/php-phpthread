@@ -1,29 +1,34 @@
 <?php
 require_once('vendor/autoload.php');
 
-// Method to be executed in a thread
-function Foo($t)
+class Foo
 {
-    echo "Starting thread #$t" . PHP_EOL;
-    
-    sleep(1 * rand(1, 5));
-    for ($i = 0; $i < 10; $i++) {
-        echo "Hello from thread #$t, i=$i" . PHP_EOL;
-        sleep(1);
-    }
-    echo "Ending thread #$t" . PHP_EOL;
+// Method to be executed in a thread
+    public function bar($t)
+    {
+        echo "Starting thread #$t" . PHP_EOL;
 
-    // Note: this line below require the file "config/cacheconfig.php" exists
-    return "$t: [[[[[[" . time() . "]]]]]]";
+        sleep(1 * rand(1, 5));
+        for ($i = 0; $i < 10; $i++) {
+            echo "Hello from thread #$t, i=$i" . PHP_EOL;
+            sleep(1);
+        }
+        echo "Ending thread #$t" . PHP_EOL;
+
+        // Note: this line below require the file "config/cacheconfig.php" exists
+        return "$t: [[[[[[" . time() . "]]]]]]";
+    }
 }
 
 try {
     $t = array();
 
+    $foo = new Foo();
+
     // Create the threads
     for ($i = 0; $i < 10; $i++) {
         // Create a new instance of the Thread class, pointing to "Foo" function
-        $thr = new \ByJG\PHPThread\Thread('Foo');
+        $thr = new \ByJG\PHPThread\Thread([$foo, 'bar']);
 
         // Started the method "Foo" in a tread
         $thr->execute($i);
