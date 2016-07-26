@@ -81,8 +81,6 @@ class ForkHandler implements ThreadInterface
 
             exit(0);
         }
-
-        // Parent.
     }
 
     protected function runPhp5($callable, $args)
@@ -143,6 +141,8 @@ class ForkHandler implements ThreadInterface
         $cache = CacheContext::factory('phpthread');
         $result = $cache->get($key);
         $cache->release($key);
+
+        print_r($result);
 
         if (PHP_VERSION_ID >= 70000 && $result instanceof \Error) {
             throw $result;
