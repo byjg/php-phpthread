@@ -16,9 +16,9 @@ use RuntimeException;
  */
 class ForkHandler implements ThreadInterface
 {
-    protected $_threadKey;
+    protected $threadKey;
     private $callable;
-    private $_pid;
+    private $pid;
 
     /**
      * constructor method
@@ -54,13 +54,13 @@ class ForkHandler implements ThreadInterface
      */
     public function execute()
     {
-        $this->_threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
+        $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
-        if (($this->_pid = pcntl_fork()) == -1) {
+        if (($this->pid = pcntl_fork()) == -1) {
             throw new RuntimeException('Couldn\'t fork the process');
         }
 
-        if ($this->_pid) {
+        if ($this->pid) {
             // Parent
             //pcntl_wait($status); //Protect against Zombie children
         } else {
@@ -99,7 +99,7 @@ class ForkHandler implements ThreadInterface
     protected function saveResult($object)
     {
         $cache = CacheContext::factory('phpthread');
-        $cache->set($this->_threadKey, $object);
+        $cache->set($this->threadKey, $object);
     }
 
     /**
@@ -111,12 +111,12 @@ class ForkHandler implements ThreadInterface
      */
     public function getResult()
     {
-        if (is_null($this->_threadKey)) {
+        if (is_null($this->threadKey)) {
             return null;
         }
 
-        $key = $this->_threadKey;
-        $this->_threadKey = null;
+        $key = $this->threadKey;
+        $this->threadKey = null;
 
         $cache = CacheContext::factory('phpthread');
         $result = $cache->get($key);
@@ -138,11 +138,11 @@ class ForkHandler implements ThreadInterface
     public function stop($signal = SIGKILL, $wait = false)
     {
         if ($this->isAlive()) {
-            posix_kill($this->_pid, $signal);
+            posix_kill($this->pid, $signal);
 
             $status = null;
             if ($wait) {
-                pcntl_waitpid($this->_pid, $status);
+                pcntl_waitpid($this->pid, $status);
             }
         }
     }
@@ -154,7 +154,7 @@ class ForkHandler implements ThreadInterface
     public function isAlive()
     {
         $status = null;
-        return (pcntl_waitpid($this->_pid, $status, WNOHANG) === 0);
+        return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
     }
 
     /**
