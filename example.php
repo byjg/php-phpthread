@@ -9,12 +9,8 @@ class Foo
         echo "Starting thread #$t" . PHP_EOL;
 
         sleep(1 * rand(1, 5));
-        for ($i = 0; $i < 2; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             echo "Hello from thread #$t, i=$i" . PHP_EOL;
-            if ($t == 1){
-                // func();
-                //throw new Exception("Exception forçada..........");
-            }
             sleep(1);
         }
         echo "Ending thread #$t" . PHP_EOL;
@@ -30,7 +26,7 @@ try {
     $foo = new Foo();
 
     // Create the threads
-    for ($i = 0; $i < 2; $i++) {
+    for ($i = 0; $i < 10; $i++) {
         // Create a new instance of the Thread class, pointing to "Foo" function
         $thr = new \ByJG\PHPThread\Thread([$foo, 'bar']);
 
@@ -53,7 +49,7 @@ try {
     foreach ($t as $thread) {
         echo "Result: " . $thread->getResult() . "\n";
     }
-    
+
 } catch (Exception $e) {
     echo 'Exception: ' . $e . PHP_EOL;
 }
