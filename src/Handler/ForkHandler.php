@@ -73,41 +73,21 @@ class ForkHandler implements ThreadInterface
                 $callable = (array) $this->callable;
             }
 
-            if (PHP_VERSION_ID < 70000) {
-                $this->runPhp5($callable, $args);
-            } else {
-                $this->runPhp7($callable, $args);
+            try {
+                $return = call_user_func_array($callable, (array)$args);
+
+                if (!is_null($return)) {
+                    $this->saveResult($return);
+                }
+            // Executed only in PHP 7, will not match in PHP 5.x
+            } catch (\Throwable $t) {
+                $this->saveResult($t);
+            // Executed only in PHP 5. Remove when PHP 5.x is no longer necessary.
+            } catch (\Exception $ex) {
+                $this->saveResult($ex);
             }
 
             exit(0);
-        }
-    }
-
-    protected function runPhp5($callable, $args)
-    {
-        try {
-            $return = call_user_func_array($callable, (array)$args);
-
-            if (!is_null($return)) {
-                $this->saveResult($return);
-            }
-        } catch (\Exception $ex) {
-            $this->saveResult($ex);
-        }
-    }
-
-    protected function runPhp7($callable, $args)
-    {
-        try {
-            $return = call_user_func_array($callable, (array)$args);
-
-            if (!is_null($return)) {
-                $this->saveResult($return);
-            }
-        } catch (\Error $ex) {
-            $this->saveResult($ex);
-        } catch (\Exception $ex) {
-            $this->saveResult($ex);
         }
     }
 
@@ -142,12 +122,8 @@ class ForkHandler implements ThreadInterface
         $result = $cache->get($key);
         $cache->release($key);
 
-        print_r($result);
-
-        if (PHP_VERSION_ID >= 70000 && $result instanceof \Error) {
-            throw $result;
-        } else if ($result instanceof \Exception) {
-            throw $result;
+        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
+             throw $result;
         }
 
         return $result;

@@ -61,34 +61,16 @@ class PThreadHandler extends \Thread implements ThreadInterface
             $callable = (array) $this->callable;
         }
 
-        if (PHP_VERSION_ID < 70000) {
-            $this->runPhp5($callable);
-        } else {
-            $this->runPhp7($callable);
-        }
-    }
-
-    protected function runPhp5($callable)
-    {
         try {
             $this->result = call_user_func_array($callable, (array)$this->args);
+        // Executed only in PHP 7, will not match in PHP 5.x
+        } catch (\Throwable $ex) {
+            $this->result = $ex;
+        // Executed only in PHP 5. Remove when PHP 5.x is no longer necessary.
         } catch (\Exception $ex) {
             $this->result = $ex;
         }
     }
-
-    protected function runPhp7($callable)
-    {
-        try {
-            $this->result = call_user_func_array($callable, (array)$this->args);
-        } catch (\Exception $ex) {
-            $this->result = $ex;
-        } catch (\Error $ex) {
-            $this->result = $ex;
-        }
-    }
-
-
 
     /**
      * Start the thread
@@ -109,12 +91,12 @@ class PThreadHandler extends \Thread implements ThreadInterface
      */
     public function getResult()
     {
-        if (PHP_VERSION_ID >= 70000 && $this->result instanceof \Error) {
-            throw $this->result;
-        } else if ($this->result instanceof \Exception) {
-            throw $this->result;
+        $result = $this->result;
+        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
+            throw $result;
         }
-        return $this->result;
+
+        return $result;
     }
 
     /**
