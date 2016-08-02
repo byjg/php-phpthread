@@ -16,9 +16,9 @@ use RuntimeException;
  */
 class ForkHandler implements ThreadInterface
 {
-    protected $_threadKey;
+    protected $threadKey;
     private $callable;
-    private $_pid;
+    private $pid;
 
     /**
      * constructor method
@@ -54,33 +54,41 @@ class ForkHandler implements ThreadInterface
      */
     public function execute()
     {
-        $this->_threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
+        $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
-        if (($this->_pid = pcntl_fork()) == -1) {
+        if (($this->pid = pcntl_fork()) == -1) {
             throw new RuntimeException('Couldn\'t fork the process');
         }
 
-        if ($this->_pid) {
+        if ($this->pid) {
             // Parent
             //pcntl_wait($status); //Protect against Zombie children
         } else {
             // Child.
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
-            if (!empty($args)) {
-                $return = call_user_func_array($this->callable, $args);
-            } else {
-                $return = call_user_func($this->callable);
+
+            $callable = $this->callable;
+            if (!is_string($callable)) {
+                $callable = (array) $this->callable;
             }
 
-            if (!is_null($return)) {
-                $this->saveResult($return);
+            try {
+                $return = call_user_func_array($callable, (array)$args);
+
+                if (!is_null($return)) {
+                    $this->saveResult($return);
+                }
+            // Executed only in PHP 7, will not match in PHP 5.x
+            } catch (\Throwable $t) {
+                $this->saveResult($t);
+            // Executed only in PHP 5. Remove when PHP 5.x is no longer necessary.
+            } catch (\Exception $ex) {
+                $this->saveResult($ex);
             }
 
             exit(0);
         }
-
-        // Parent.
     }
 
     /**
@@ -91,26 +99,32 @@ class ForkHandler implements ThreadInterface
     protected function saveResult($object)
     {
         $cache = CacheContext::factory('phpthread');
-        $cache->set($this->_threadKey, $object);
+        $cache->set($this->threadKey, $object);
     }
 
     /**
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
+     * @throws \Error
+     * @throws object
      */
     public function getResult()
     {
-        if (is_null($this->_threadKey)) {
+        if (is_null($this->threadKey)) {
             return null;
         }
 
-        $key = $this->_threadKey;
-        $this->_threadKey = null;
+        $key = $this->threadKey;
+        $this->threadKey = null;
 
         $cache = CacheContext::factory('phpthread');
         $result = $cache->get($key);
         $cache->release($key);
+
+        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
+             throw $result;
+        }
 
         return $result;
     }
@@ -124,11 +138,11 @@ class ForkHandler implements ThreadInterface
     public function stop($signal = SIGKILL, $wait = false)
     {
         if ($this->isAlive()) {
-            posix_kill($this->_pid, $signal);
+            posix_kill($this->pid, $signal);
 
             $status = null;
             if ($wait) {
-                pcntl_waitpid($this->_pid, $status);
+                pcntl_waitpid($this->pid, $status);
             }
         }
     }
@@ -140,7 +154,7 @@ class ForkHandler implements ThreadInterface
     public function isAlive()
     {
         $status = null;
-        return (pcntl_waitpid($this->_pid, $status, WNOHANG) === 0);
+        return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
     }
 
     /**
@@ -158,6 +172,6 @@ class ForkHandler implements ThreadInterface
 
     public function waitFinish()
     {
-        while ($this->isAlive()) {}
+        pcntl_wait($status);
     }
 }

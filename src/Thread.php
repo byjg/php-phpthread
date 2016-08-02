@@ -49,7 +49,10 @@ class Thread implements ThreadInterface
         } elseif (function_exists('pcntl_fork')) {
             $this->threadInstance = new ForkHandler();
         } else {
-            throw new RuntimeException('PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl. Windows is not supported.');
+            throw new RuntimeException(
+                'PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl. ' .
+                'Windows is not supported.'
+            );
         }
 
         return $this->threadInstance;

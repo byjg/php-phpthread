@@ -8,7 +8,8 @@
     }
   ],
   "require": {
-    "byjg/cache-engine": "~1.0"
+    "byjg/cache-engine": "~1.0",
+    "php": ">5.2.7"
   },
   "suggest": {
     "ext-pcntl": "*",

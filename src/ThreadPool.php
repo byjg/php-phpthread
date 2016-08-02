@@ -13,13 +13,13 @@ class ThreadPool
      * The list of threads
      * @var array
      */
-    protected $_threadList = array();
+    protected $threadList = array();
 
     /**
      * The list of threads instances
      * @var array
      */
-    protected $_threadInstance = array();
+    protected $threadInstance = array();
 
     /**
      * Queue a new thread worker
@@ -44,7 +44,7 @@ class ThreadPool
         $data->callable = $callable;
         $data->params = $params;
 
-        $this->_threadList[$thid] = $data;
+        $this->threadList[$thid] = $data;
 
         return $thid;
     }
@@ -56,14 +56,14 @@ class ThreadPool
     {
         $thr = array();
 
-        foreach ($this->_threadList as $key => $value) {
+        foreach ($this->threadList as $key => $value) {
             $thread = new Thread($value->callable);
 
             call_user_func_array([$thread, 'execute'], $value->params);
             $thr[$key] = $thread;
         }
 
-        $this->_threadInstance = $thr;
+        $this->threadInstance = $thr;
     }
 
     /**
@@ -71,7 +71,7 @@ class ThreadPool
      */
     public function waitWorkers()
     {
-        foreach ($this->_threadInstance as $value) {
+        foreach ($this->threadInstance as $value) {
             $value->waitFinish();
         }
     }
@@ -85,7 +85,7 @@ class ThreadPool
     {
         $count = 0;
 
-        foreach ($this->_threadInstance as $value) {
+        foreach ($this->threadInstance as $value) {
             $count += $value->isAlive() ? 1 : 0;
         }
 
@@ -99,7 +99,7 @@ class ThreadPool
      */
     public function getThreads()
     {
-        return array_keys($this->_threadInstance);
+        return array_keys($this->threadInstance);
     }
 
     /**
@@ -110,11 +110,11 @@ class ThreadPool
      */
     public function getThreadResult($threadId)
     {
-        if (!isset($this->_threadInstance[$threadId])) {
+        if (!isset($this->threadInstance[$threadId])) {
             return null;
         }
 
-        return $this->_threadInstance[$threadId]->getResult();
+        return $this->threadInstance[$threadId]->getResult();
     }
 
     /**
@@ -142,11 +142,11 @@ class ThreadPool
      */
     protected function getThreadById($threadId)
     {
-        if (!isset($this->_threadInstance[$threadId])) {
+        if (!isset($this->threadInstance[$threadId])) {
             return null;
         }
 
-        return $this->_threadInstance[$threadId];
+        return $this->threadInstance[$threadId];
     }
 
     /**

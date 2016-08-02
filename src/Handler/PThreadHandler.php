@@ -20,8 +20,6 @@ class PThreadHandler extends \Thread implements ThreadInterface
 
     private $result;
 
-    private $hasError;
-
     /**
      * Thread constructor.
      */
@@ -51,21 +49,27 @@ class PThreadHandler extends \Thread implements ThreadInterface
         return $this->loader;
     }
 
-    protected function threadError()
-    {
-        $this->hasError = error_get_last();
-    }
-
     /**
      * Here you are in a threaded environment
      */
     public function run()
     {
-        register_shutdown_function([$this, 'threadError']);
-
         $this->getLoader()->register();
 
-        $this->result = call_user_func_array($this->callable, $this->args);
+        $callable = $this->callable;
+        if (!is_string($callable)) {
+            $callable = (array) $this->callable;
+        }
+
+        try {
+            $this->result = call_user_func_array($callable, (array)$this->args);
+        // Executed only in PHP 7, will not match in PHP 5.x
+        } catch (\Throwable $ex) {
+            $this->result = $ex;
+        // Executed only in PHP 5. Remove when PHP 5.x is no longer necessary.
+        } catch (\Exception $ex) {
+            $this->result = $ex;
+        }
     }
 
     /**
@@ -83,21 +87,16 @@ class PThreadHandler extends \Thread implements ThreadInterface
      * Get the thread result
      *
      * @return mixed
-     * @throws \RuntimeException
+     * @throws \Exception
      */
     public function getResult()
     {
-        if ($this->hasError && ( $this->hasError['type'] == E_ERROR || $this->hasError['type'] == E_USER_ERROR )) {
-            throw new \RuntimeException(
-                sprintf(
-                    'Thread error: "%s", in "%s" at line %d. <<--- ',
-                    $this->hasError['message'],
-                    $this->hasError['file'],
-                    $this->hasError['line']
-                )
-            );
+        $result = $this->result;
+        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
+            throw $result;
         }
-        return $this->result;
+
+        return $result;
     }
 
     /**
