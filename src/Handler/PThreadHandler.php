@@ -87,12 +87,18 @@ class PThreadHandler extends \Thread implements ThreadInterface
      * Get the thread result
      *
      * @return mixed
-     * @throws \Exception
+     * @throws \Error
+     * @throws \Throwable
      */
     public function getResult()
     {
         $result = $this->result;
-        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
+        if (is_object($result) &&
+            ($result instanceof \Exception
+                || $result instanceof \Throwable
+                || $result instanceof \Error
+            )
+        ) {
             throw $result;
         }
 
