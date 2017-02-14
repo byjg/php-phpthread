@@ -138,8 +138,13 @@ class ForkHandler implements ThreadInterface
         $result = $cache->get($key);
         $cache->release($key);
 
-        if (is_object($result) && (is_subclass_of($result, '\\Error') || is_subclass_of($result, '\\Exception'))) {
-             throw $result;
+        if (is_object($result) &&
+            ($result instanceof \Exception
+                || $result instanceof \Throwable
+                || $result instanceof \Error
+            )
+        ) {
+            throw $result;
         }
 
         return $result;
