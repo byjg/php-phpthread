@@ -3,7 +3,7 @@
 namespace ByJG\PHPThread\Handler;
 
 use ByJG\Cache\CacheContext;
-use InvalidArgumentException;
+use ByJG\Cache\Engine\ShmopCacheEngine;
 use RuntimeException;
 
 /**
@@ -20,20 +20,24 @@ class ForkHandler implements ThreadInterface
     private $callable;
     private $pid;
 
+
+    private $maxSharedMemorySize = null;
+    private $defaultPermission = null;
+
     /**
      * constructor method
      *
-     * @throws RuntimeException
-     * @throws InvalidArgumentException
+     * @param int $maxSharedMemorySize
+     * @param string $defaultPermission
      */
-    public function __construct()
+    public function __construct($maxSharedMemorySize = 0x100000, $defaultPermission = '0700')
     {
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
         }
 
-        /** Check if is configured */
-        CacheContext::factory('phpthread');
+        $this->maxSharedMemorySize = $maxSharedMemorySize;
+        $this->defaultPermission = $defaultPermission;
     }
 
     /**
@@ -92,14 +96,26 @@ class ForkHandler implements ThreadInterface
     }
 
     /**
+     * @return \ByJG\Cache\Engine\ShmopCacheEngine
+     */
+    protected function getSharedMemoryEngine()
+    {
+        return new ShmopCacheEngine(
+            [
+                'max-size' => $this->maxSharedMemorySize,
+                'default-permission' => $this->defaultPermission
+            ]
+        );
+    }
+
+    /**
      * Save the thread result in a shared memory block
      *
      * @param mixed $object Need to be serializable
      */
     protected function saveResult($object)
     {
-        $cache = CacheContext::factory('phpthread');
-        $cache->set($this->threadKey, $object);
+        $this->getSharedMemoryEngine()->set($this->threadKey, $object);
     }
 
     /**
@@ -118,7 +134,7 @@ class ForkHandler implements ThreadInterface
         $key = $this->threadKey;
         $this->threadKey = null;
 
-        $cache = CacheContext::factory('phpthread');
+        $cache = $this->getSharedMemoryEngine();
         $result = $cache->get($key);
         $cache->release($key);
 
