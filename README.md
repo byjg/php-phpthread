@@ -97,26 +97,24 @@ echo "\n\nEnded!\n";
 
 **Important Note for the FORK implementation**
 
-In order to get working the getResult of the fork implementation is necessary setup a file in '__DIR__/config/cacheconfig.php' with 
-the follow contents for setup the maxthread.
+In order to get working the 'getResult' of the fork implementation is necessary pass the setup parameters to the
+Thread::setThreadHandlerArguments() method; 
 
 ```php
 <?php
 
-return [
-    'phpthread' => [
-        'instance' => '\\ByJG\\Cache\\ShmopCacheEngine',
-        'shmop' => [
-            'max-size' => 0x100000,
-            'default-permission' => '0700'
-        ]
+$thread = new \ByJG\PHPThread\Thread([$someinstance, $somemethod]);
+$thread->setThreadHandlerArguments(
+    [
+        'max-size' => 0x100000,
+        'default-permission' => '0700'
     ]
-];
+);
 ```
 
 ## Install
 
-Just type: `composer require "byjg/phpthread=2.0.*"`
+Just type: `composer require "byjg/phpthread=2.1.*"`
 
 ### Major changes from 1.* to 2.*
 

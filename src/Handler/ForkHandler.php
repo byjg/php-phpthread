@@ -30,10 +30,18 @@ class ForkHandler implements ThreadInterface
      * @param int $maxSharedMemorySize
      * @param string $defaultPermission
      */
-    public function __construct($maxSharedMemorySize = 0x100000, $defaultPermission = '0700')
+    public function __construct($maxSharedMemorySize, $defaultPermission)
     {
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
+        }
+
+        if (empty($maxSharedMemorySize)) {
+            $maxSharedMemorySize = 0x100000;
+        }
+
+        if (empty($defaultPermission)) {
+            $defaultPermission = '0700';
         }
 
         $this->maxSharedMemorySize = $maxSharedMemorySize;

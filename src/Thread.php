@@ -35,6 +35,21 @@ class Thread implements ThreadInterface
         $this->setCallable($callable);
     }
 
+    private $threadHandlerArguments = [];
+
+    /**
+     * @param array $arguments
+     */
+    public function setThreadHandlerArguments($arguments)
+    {
+        $this->threadHandlerArguments = $arguments;
+    }
+
+    private function getThreadHandlerArguments($property)
+    {
+        return isset($this->threadHandlerArguments[$property]) ? $this->threadHandlerArguments[$property] : null;
+    }
+
     /**
      * @return ThreadInterface
      */
@@ -47,7 +62,10 @@ class Thread implements ThreadInterface
         if (class_exists('\Thread', true)) {
             $this->threadInstance = new PThreadHandler();
         } elseif (function_exists('pcntl_fork')) {
-            $this->threadInstance = new ForkHandler();
+            $this->threadInstance = new ForkHandler(
+                $this->getThreadHandlerArguments('max-size'),
+                $this->getThreadHandlerArguments('default-permission')
+            );
         } else {
             throw new RuntimeException(
                 'PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl. ' .
