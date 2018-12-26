@@ -12,14 +12,14 @@ This class detects automatically if PHP was compiled:
     
 and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
 
-### Some Informations
+# Some Informations
 
 - Most of the fork implementation was based on the post "http://villavu.com/forum/showthread.php?t=73623" by the "superuser"
 - Tales Santos (tsantos84) contributed on the base of the Thread ZTS by creating the code base and solving some specific thread problems. Thanks!!!!  
 
 # Usage
 
-## Assume for the examples below the class 'Foo' and the method 'bar'
+Assume for the examples below the class 'Foo' and the method 'bar':
 
 ```php
 require_once('vendor/autoload.php');
@@ -112,16 +112,16 @@ $thread->setThreadHandlerArguments(
 );
 ```
 
-## Install
+# Install
 
 Just type: `composer require "byjg/phpthread=2.1.*"`
 
-### Major changes from 1.* to 2.*
+# Major changes from 1.* to 2.*
 
 * Method Thread::start() renamed to Thread::execute()
 * Implemented PThread and Fork as a Polyfill class
 
-## FAQ
+# FAQ
 
 **How do I instantiate a method class?**
 
