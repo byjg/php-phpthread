@@ -147,5 +147,8 @@ class PThreadHandler extends \Thread implements ThreadInterface
     public function waitFinish()
     {
         $this->join();
+        if ($this->isAlive()) {
+            $this->waitFinish();
+        }
     }
 }

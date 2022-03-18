@@ -33,7 +33,7 @@ try {
     }
 
     // Starts all the threads in the queue
-    $threadPool->startWorkers();
+    $threadPool->startPool();
 
     // Wait until there is no more active workers
     // You can use $threadPool->waitWorkers() instead the loop below

@@ -1,7 +1,9 @@
 # phpthread
-[![Code Climate](https://codeclimate.com/github/byjg/phpthread/badges/gpa.svg)](https://codeclimate.com/github/byjg/phpthread)
-[![SensioLabsInsight](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f/mini.png)](https://insight.sensiolabs.com/projects/842a5377-bbda-44f2-9163-b40dc650dc1f)
+
+[![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/phpthread/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/byjg/phpthread/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
+[![Build Status](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml)
 
 Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation;
  
@@ -12,12 +14,12 @@ This class detects automatically if PHP was compiled:
     
 and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
 
-# Some Informations
+## Notes
 
 - Most of the fork implementation was based on the post "http://villavu.com/forum/showthread.php?t=73623" by the "superuser"
 - Tales Santos (tsantos84) contributed on the base of the Thread ZTS by creating the code base and solving some specific thread problems. Thanks!!!!  
 
-# Usage
+## Usage
 
 Assume for the examples below the class 'Foo' and the method 'bar':
 
@@ -82,7 +84,7 @@ $threadPool->queueWorker( [ $foo, 'bar' ] , [ 1 ]);
 $threadPool->queueWorker( [ $foo, 'bar' ], [ 2 ]);
 
 // Starts all the threads in the queue
-$threadPool->startWorkers();
+$threadPool->startPool();
 
 // Wait until there is no more active workers
 $threadPool->waitWorkers();
@@ -112,16 +114,16 @@ $thread->setThreadHandlerArguments(
 );
 ```
 
-# Install
+## Install
 
 Just type: `composer require "byjg/phpthread=2.1.*"`
 
-# Major changes from 1.* to 2.*
+## Major changes from 1.* to 2.*
 
 * Method Thread::start() renamed to Thread::execute()
 * Implemented PThread and Fork as a Polyfill class
 
-# FAQ
+## FAQ
 
 **How do I instantiate a method class?**
 

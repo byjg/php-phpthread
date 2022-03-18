@@ -202,5 +202,8 @@ class ForkHandler implements ThreadInterface
     public function waitFinish()
     {
         pcntl_wait($status);
+        if ($this->isAlive()) {
+            $this->waitFinish();
+        }
     }
 }
