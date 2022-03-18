@@ -64,7 +64,7 @@ jobs:
       - name: Install Extensions
         run: |
           git clone https://github.com/krakjoe/parallel -b develop /tmp/parallel
-          pecl install parallel
+          docker-php-ext-install /tmp/parallel
           docker-php-ext-install pcntl
       - run: composer install
       - run: php tests/get_class_name.php
