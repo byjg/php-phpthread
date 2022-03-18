@@ -3,8 +3,9 @@
 namespace ByJG\PHPThread;
 
 use ByJG\PHPThread\Handler\ForkHandler;
-use ByJG\PHPThread\Handler\PThreadHandler;
+use ByJG\PHPThread\Handler\ParallelHandler;
 use ByJG\PHPThread\Handler\ThreadInterface;
+use Closure;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -26,13 +27,11 @@ class Thread implements ThreadInterface
     /**
      * constructor method
      *
-     * @param mixed $callable string with the function name or a array with the instance and the method name
-     * @throws RuntimeException
-     * @throws InvalidArgumentException
+     * @param Closure $closure
      */
-    public function __construct(callable $callable)
+    public function __construct(Closure $closure)
     {
-        $this->setCallable($callable);
+        $this->setClosure($closure);
     }
 
     private $threadHandlerArguments = [];
@@ -59,8 +58,8 @@ class Thread implements ThreadInterface
             return $this->threadInstance;
         }
 
-        if (class_exists('\Thread', true)) {
-            $this->threadInstance = new PThreadHandler();
+        if (class_exists('\parallel\Runtime', true)) {
+            $this->threadInstance = new ParallelHandler();
         } elseif (function_exists('pcntl_fork')) {
             $this->threadInstance = new ForkHandler(
                 $this->getThreadHandlerArguments('max-size'),
@@ -92,6 +91,7 @@ class Thread implements ThreadInterface
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
+     * @throws \Throwable
      */
     public function getResult()
     {
@@ -125,12 +125,12 @@ class Thread implements ThreadInterface
 
     /**
      * Set the thread callable method
-     * @param callable $callable
+     * @param Closure $closure
      * @return mixed
      */
-    public function setCallable(callable $callable)
+    public function setClosure(Closure $closure)
     {
-        $this->getThreadInstance()->setCallable($callable);
+        $this->getThreadInstance()->setClosure($closure);
     }
 
     public function getClassName()

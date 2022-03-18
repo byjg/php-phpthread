@@ -2,6 +2,8 @@
 
 namespace ByJG\PHPThread\Handler;
 
+use Closure;
+
 interface ThreadInterface
 {
 
@@ -35,11 +37,11 @@ interface ThreadInterface
     public function isAlive();
 
     /**
-     * Set the thread callable method
-     * @param callable $callable
+     * Set the thread Closure method
+     * @param Closure $closure
      * @return mixed
      */
-    public function setCallable(callable $callable);
+    public function setClosure(Closure $closure);
 
     /**
      * Wait for the thread finish and join to main thread;

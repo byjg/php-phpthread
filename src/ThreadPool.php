@@ -2,6 +2,8 @@
 
 namespace ByJG\PHPThread;
 
+use Closure;
+
 /**
  * Manage a pool of threads.
  *
@@ -26,13 +28,12 @@ class ThreadPool
     /**
      * Queue a new thread worker
      *
-     * @param callable $callable
+     * @param Closure $closure
      * @param array $params The thread parameters
      * @param string $thid The Thread id to identify the ID
      * @return string
-     * @throws \InvalidArgumentException
      */
-    public function queueWorker(callable $callable, $params = [], $thid = null)
+    public function queueWorker(Closure $closure, $params = [], $thid = null)
     {
         if (!is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
@@ -43,7 +44,7 @@ class ThreadPool
         }
 
         $data = new \stdClass;
-        $data->callable = $callable;
+        $data->closure = $closure;
         $data->params = $params;
 
         $this->threadList[$thid] = $data;
@@ -69,7 +70,7 @@ class ThreadPool
 
     protected function startWorker($threadItemKey)
     {
-        $thread = new Thread($this->threadList[$threadItemKey]->callable);
+        $thread = new Thread($this->threadList[$threadItemKey]->closure);
 
         call_user_func_array([$thread, 'execute'], $this->threadList[$threadItemKey]->params);
         $this->threadInstance[$threadItemKey] = $thread;

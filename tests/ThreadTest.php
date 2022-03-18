@@ -5,16 +5,15 @@ use PHPUnit\Framework\TestCase;
 
 class ThreadTest extends TestCase
 {
-    public function threadMethod($arg)
-    {
-        sleep($arg*3);
-        return $arg * 3;
-    }
-
     public function testThread()
     {
-        $thr1 = new \ByJG\PHPThread\Thread([$this, 'threadMethod']);
-        $thr2 = new \ByJG\PHPThread\Thread([$this, 'threadMethod']);
+        $closure = function ($arg) {
+            sleep($arg*3);
+            return $arg * 3;
+        };
+
+        $thr1 = new \ByJG\PHPThread\Thread($closure);
+        $thr2 = new \ByJG\PHPThread\Thread($closure);
 
         // Start Threads
         $thr1->execute(2);

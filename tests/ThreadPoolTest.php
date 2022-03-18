@@ -5,24 +5,26 @@ use PHPUnit\Framework\TestCase;
 
 class ThreadPoolTest extends TestCase
 {
-    public function threadMethod($arg)
+    protected function getClosure()
     {
-        sleep($arg*3);
-        return $arg * 3;
+        return function ($arg) {
+            sleep($arg*3);
+            return $arg * 3;
+        };
     }
 
     public function testThread()
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $th1 = $pool->queueWorker([$this, 'threadMethod'], [3]);
-        $th2 = $pool->queueWorker([$this, 'threadMethod'], [2]);
+        $th1 = $pool->queueWorker($this->getClosure(), [3]);
+        $th2 = $pool->queueWorker($this->getClosure(), [2]);
         $this->assertEquals(0, $pool->activeWorkers());
 
         $pool->startPool();
         $this->assertEquals(2, $pool->activeWorkers());
 
-        $th3 = $pool->queueWorker([$this, 'threadMethod'], [1], 300);
+        $th3 = $pool->queueWorker($this->getClosure(), [1]);
         $this->assertEquals(3, $pool->activeWorkers());
 
         $pool->waitWorkers();
@@ -39,8 +41,8 @@ class ThreadPoolTest extends TestCase
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $th1 = $pool->queueWorker([$this, 'threadMethod'], [3]);
-        $th2 = $pool->queueWorker([$this, 'threadMethod'], [2]);
+        $th1 = $pool->queueWorker($this->getClosure(), [3]);
+        $th2 = $pool->queueWorker($this->getClosure(), [2]);
         $this->assertEquals(0, $pool->activeWorkers());
 
         $this->assertNull($pool->getThreadResult($th1));
@@ -51,8 +53,8 @@ class ThreadPoolTest extends TestCase
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $pool->queueWorker([$this, 'threadMethod'], [3]);
-        $pool->queueWorker([$this, 'threadMethod'], [2]);
+        $th1 = $pool->queueWorker($this->getClosure(), [3]);
+        $th2 = $pool->queueWorker($this->getClosure(), [2]);
         $this->assertEquals(0, $pool->activeWorkers());
 
         $pool->startPool();

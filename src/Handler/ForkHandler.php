@@ -17,7 +17,7 @@ use RuntimeException;
 class ForkHandler implements ThreadInterface
 {
     protected $threadKey;
-    private $callable;
+    private $closure;
     private $pid;
 
 
@@ -51,12 +51,12 @@ class ForkHandler implements ThreadInterface
     /**
      * Private function for set the method will be forked;
      *
-     * @param callable $callable string with the function name or a array with the instance and the method name
+     * @param \Closure $closure
      * @return mixed|void
      */
-    public function setCallable(callable $callable)
+    public function setClosure(\Closure $closure)
     {
-        $this->callable = $callable;
+        $this->closure = $closure;
     }
 
     /**
@@ -80,13 +80,8 @@ class ForkHandler implements ThreadInterface
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
             $args = func_get_args();
 
-            $callable = $this->callable;
-            if (!is_string($callable)) {
-                $callable = (array) $this->callable;
-            }
-
             try {
-                $return = call_user_func_array($callable, (array)$args);
+                $return = call_user_func_array($this->closure, (array)$args);
 
                 if (!is_null($return)) {
                     $this->saveResult($return);

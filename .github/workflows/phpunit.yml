@@ -44,19 +44,28 @@ jobs:
           - "7.4"
           - "7.3"
           - "7.2"
-          - "7.1"
-    #          - "7.0"
-    #          - "5.6"
+#          - "7.1" # Pthread last stable PHP 7.2
+#          - "7.0"
+#          - "5.6"
 
     steps:
       - uses: actions/checkout@v2
       - name: Install requirements
+        run: |
+          apt -y -qq update
+          apt -y -qq install git zip unzip build-essential
+      - name: Install Composer
         run: |
           php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
           php -r "if (hash_file('sha384', 'composer-setup.php') === '906a84df04cea2aa72f40b5f787e49f22d4c2f19492ac310e8cba5b96ac8b64115ac402c8cd292b8a03482574915d1a8') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
           php composer-setup.php
           php -r "unlink('composer-setup.php');"
           mv composer.phar /usr/bin/composer
+      - name: Install Extensions
+        run: |
+          git clone https://github.com/krakjoe/parallel -b develop /tmp/parallel
+          pecl install parallel
+          docker-php-ext-install pcntl
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/phpunit
