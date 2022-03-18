@@ -151,4 +151,9 @@ class PThreadHandler extends \Thread implements ThreadInterface
             $this->waitFinish();
         }
     }
+
+    public function getClassName()
+    {
+        return PThreadHandler::class;
+    }
 }

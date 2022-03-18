@@ -132,4 +132,9 @@ class Thread implements ThreadInterface
     {
         $this->getThreadInstance()->setCallable($callable);
     }
+
+    public function getClassName()
+    {
+        return $this->getThreadInstance()->getClassName();
+    }
 }

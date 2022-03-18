@@ -206,4 +206,9 @@ class ForkHandler implements ThreadInterface
             $this->waitFinish();
         }
     }
+
+    public function getClassName()
+    {
+        return ForkHandler::class;
+    }
 }

@@ -47,4 +47,10 @@ interface ThreadInterface
      * @return mixed
      */
     public function waitFinish();
+
+    /**
+     * Return the thread class name
+     * @return string
+     */
+    public function getClassName();
 }
