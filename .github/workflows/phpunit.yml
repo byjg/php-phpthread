@@ -61,7 +61,14 @@ jobs:
           php composer-setup.php
           php -r "unlink('composer-setup.php');"
           mv composer.phar /usr/bin/composer
-      - name: Install Extensions
+      - name: Install Extensions (PHP < 8.0)
+        if:  ${{ matrix.php-version < '8.0' }}
+        run: |
+          docker-php-ext-install pcntl
+          pecl install parallel
+          docker-php-ext-enable parallel
+      - name: Install Extensions (PHP >= 8.0)
+        if:  ${{ matrix.php-version >= '8.0' }}
         run: |
           git clone https://github.com/krakjoe/parallel -b develop /tmp/parallel
           docker-php-ext-install /tmp/parallel
