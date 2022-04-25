@@ -64,7 +64,7 @@ echo "Thread Result 2: " . $thread2->getResult();
 
 ## Thread Pool Usage
 
-You can create a pool of threads.
+You can create a pool of threads. This is particulary interesting if you want to queue Workers after the pool is started.
 
 ```php
 // Create a instance of the ThreadPool
@@ -76,6 +76,10 @@ $threadPool->queueWorker( $threadClousure, [ 2 ]);
 
 // Starts all the threads in the queue
 $threadPool->startPool();
+
+// Add more workers after the pool is started:
+$threadPool->queueWorker( $threadClousure, [ 3 ]);
+$threadPool->queueWorker( $threadClousure, [ 4 ]);
 
 // Wait until there is no more active workers
 $threadPool->waitWorkers();
