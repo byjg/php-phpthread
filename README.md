@@ -6,12 +6,12 @@
 [![Build Status](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml)
 
 Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation;
- 
+
 This class detects automatically if PHP was compiled:
- 
- - with ZTS (--enable-maintainer-zts or --enable-zts) and the extension pthreads (works on Windows also) 
- - with the Process Controle (--enable-pcntl)
-    
+
+- with ZTS (--enable-maintainer-zts or --enable-zts) and the extension pthreads (works on Windows also) 
+- with the Process Controle (--enable-pcntl)
+
 and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
 
 ## Notes
@@ -27,9 +27,7 @@ Assume for the examples below the class 'Foo' and the method 'bar':
 require_once('vendor/autoload.php');
 
 // Method to be executed in a thread
-class Foo
-{
-    public function bar($t)
+$threadClousure = function ($t)
     {
         echo "Starint thread #$t" . PHP_EOL;;
         sleep(1 * rand(1, 5));
@@ -41,19 +39,15 @@ class Foo
         echo "Ending thread #$t" . PHP_EOL;
     
         return $t;
-    }
-}
+    };
 ```
 
 ## Basic Thread Usage
 
 ```php
-// Create a basic instance:
-$foo = new Foo();
-
 // Create the Threads passing a callable
-$thread1 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
-$thread2 = new ByJG\PHPThread\Thread( [$foo, 'bar'] );
+$thread1 = new ByJG\PHPThread\Thread( $threadClousure );
+$thread2 = new ByJG\PHPThread\Thread( $threadClousure );
 
 // Start the threads and passing parameters
 $thread1->execute(1);
@@ -73,15 +67,12 @@ echo "Thread Result 2: " . $thread2->getResult();
 You can create a pool of threads.
 
 ```php
-// Create a basic instance:
-$foo = new Foo();
-
 // Create a instance of the ThreadPool
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
 // Create and queue the threads with call parameters
-$threadPool->queueWorker( [ $foo, 'bar' ] , [ 1 ]);
-$threadPool->queueWorker( [ $foo, 'bar' ], [ 2 ]);
+$threadPool->queueWorker( $threadClousure, [ 1 ]);
+$threadPool->queueWorker( $threadClousure, [ 2 ]);
 
 // Starts all the threads in the queue
 $threadPool->startPool();
@@ -116,12 +107,12 @@ $thread->setThreadHandlerArguments(
 
 ## Install
 
-Just type: `composer require "byjg/phpthread=2.1.*"`
+Just type: `composer require "byjg/phpthread=2.3.*"`
 
 ## Major changes from 1.* to 2.*
 
-* Method Thread::start() renamed to Thread::execute()
-* Implemented PThread and Fork as a Polyfill class
+- Method Thread::start() renamed to Thread::execute()
+- Implemented PThread and Fork as a Polyfill class
 
 ## FAQ
 
@@ -137,4 +128,3 @@ or
 $instance = new myClass();
 $thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
 ```
-
