@@ -2,10 +2,7 @@
 
 require_once('vendor/autoload.php');
 
-class Foo
-{
-// Method to be executed in a thread
-    public function bar($t)
+$threadClousure = function ($t)
     {
         echo "Starting thread #$t" . PHP_EOL;
         sleep(1 * rand(1, 5));
@@ -16,20 +13,17 @@ class Foo
         echo "Ending thread #$t" . PHP_EOL;
 
         return uniqid("Thread_{$t}_");
-    }
-}
+    };
 
 
 try {
     // Create a instance of the ThreadPool
     $threadPool = new \ByJG\PHPThread\ThreadPool();
 
-    $foo = new Foo();
-
     // Create the threads
     for ($i = 0; $i < 10; $i++) {
         // Queue a worker pointing to "Foo" function and pass the required parameters
-        $threadPool->queueWorker([$foo, 'bar'], [$i]);
+        $threadPool->queueWorker($threadClousure, [$i]);
     }
 
     // Starts all the threads in the queue

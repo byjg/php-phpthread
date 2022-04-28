@@ -1,10 +1,7 @@
 <?php
 require_once('vendor/autoload.php');
 
-class Foo
-{
-// Method to be executed in a thread
-    public function bar($t)
+$threadClosure = function ($t)
     {
         echo "Starting thread #$t" . PHP_EOL;
 
@@ -16,19 +13,16 @@ class Foo
         echo "Ending thread #$t" . PHP_EOL;
 
         // Note: this line below require the file "config/cacheconfig.php" exists
-        return "$t: [[[[[[" . time() . "]]]]]]";
-    }
-}
+        return "$t: [[[[[[;" . time() . "]]]]]]";
+    };
 
 try {
     $t = array();
 
-    $foo = new Foo();
-
     // Create the threads
     for ($i = 0; $i < 10; $i++) {
         // Create a new instance of the Thread class, pointing to "Foo" function
-        $thr = new \ByJG\PHPThread\Thread([$foo, 'bar']);
+        $thr = new \ByJG\PHPThread\Thread($threadClosure);
 
         // Started the method "Foo" in a tread
         $thr->execute($i);
