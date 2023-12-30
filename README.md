@@ -138,8 +138,8 @@ $thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
 
 ```mermaid
 flowchart TD
-    PHPThread --> CacheEngine
-    PHPThread --> ext-posix
-    PHPThread --> ext-pcntl
-    PHPThread --> ext-pthreads*
+    byjg/phpthread --> byjg/cache-engine
+    byjg/phpthread --> ext-posix
+    byjg/phpthread --> ext-pcntl
+    byjg/phpthread --> ext-pthreads*
 ```
