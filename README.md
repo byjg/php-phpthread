@@ -132,3 +132,14 @@ or
 $instance = new myClass();
 $thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
 ```
+
+
+## Dependencies
+
+```mermaid
+flowchart TD
+    PHPThread --> CacheEngine
+    PHPThread --> ext-posix
+    PHPThread --> ext-pcntl
+    PHPThread --> ext-pthreads*
+```

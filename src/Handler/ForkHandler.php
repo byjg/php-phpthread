@@ -2,8 +2,7 @@
 
 namespace ByJG\PHPThread\Handler;
 
-use ByJG\Cache\CacheContext;
-use ByJG\Cache\Engine\ShmopCacheEngine;
+use ByJG\Cache\Psr16\ShmopCacheEngine;
 use RuntimeException;
 
 /**
@@ -99,7 +98,7 @@ class ForkHandler implements ThreadInterface
     }
 
     /**
-     * @return \ByJG\Cache\Engine\ShmopCacheEngine
+     * @return ShmopCacheEngine
      */
     protected function getSharedMemoryEngine()
     {
@@ -139,7 +138,7 @@ class ForkHandler implements ThreadInterface
 
         $cache = $this->getSharedMemoryEngine();
         $result = $cache->get($key);
-        $cache->release($key);
+        $cache->delete($key);
 
         if (is_object($result) &&
             ($result instanceof \Exception
