@@ -69,7 +69,9 @@ jobs:
 
   Documentation:
     if: github.ref == 'refs/heads/master'
-    needs: Build
+    needs:
+      - Build
+      - Build-zts
     uses: byjg/byjg.github.io/.github/workflows/add-doc.yaml@master
     with:
       folder: php
