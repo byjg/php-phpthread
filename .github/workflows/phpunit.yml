@@ -54,14 +54,15 @@ jobs:
         if:  ${{ matrix.php-version < '8.0' }}
         run: |
           docker-php-ext-install pcntl
-          pecl install parallel
+          pecl install parallel-1.1.4
           docker-php-ext-enable parallel
       - name: Install Extensions (PHP >= 8.0)
         if:  ${{ matrix.php-version >= '8.0' }}
         run: |
-          git clone https://github.com/krakjoe/parallel -b develop /tmp/parallel
-          docker-php-ext-install /tmp/parallel
           docker-php-ext-install pcntl
+          pecl install parallel
+          docker-php-ext-enable parallel
+
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/phpunit
