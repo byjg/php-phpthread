@@ -1,9 +1,12 @@
-# phpthread
+# PHP Thread
 
+[![Build Status](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/phpthread/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/byjg/phpthread/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
-[![Build Status](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml)
+[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-phpthread/)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-phpthread.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-phpthread.svg)](https://github.com/byjg/php-phpthread/releases/)
+
+Threads made easy for PHP.
 
 Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation;
 
@@ -111,7 +114,7 @@ $thread->setThreadHandlerArguments(
 
 ## Install
 
-Just type: `composer require "byjg/phpthread=2.3.*"`
+Just type: `composer require "byjg/phpthread"`
 
 ## Major changes from 1.* to 2.*
 
