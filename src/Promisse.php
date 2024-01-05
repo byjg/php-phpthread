@@ -56,7 +56,7 @@ class Promisse implements PromisseInterface
             if (empty($tempStatus)) {
                 return $this->promisseStatus;
             }
-            $this->promisseStatus = SharedMemory::getInstance()->get($this->promisseId . "_st");
+            $this->promisseStatus = $tempStatus;
             $this->promisseResultArgs = SharedMemory::getInstance()->get($this->promisseId);
             if (!$keep) {
                 SharedMemory::getInstance()->delete($this->promisseId);
@@ -87,12 +87,17 @@ class Promisse implements PromisseInterface
 
    public function then(\Closure $onFulfilled, \Closure $onRejected = null): PromisseInterface
    {
-       $then = function () use ($onFulfilled, $onRejected) {
-           $this->promisseThread->waitFinish();
-           $this->checkPromisseState(true);
-           if ($this->promisseStatus === self::STATUS_FULFILLED) {
+       $promisse = $this;
+       $then = function () use ($onFulfilled, $onRejected, $promisse) {
+           $promisse->promisseThread->waitFinish();
+           $status = $promisse->checkPromisseState(true);
+           while ($status === self::STATUS_PENDING) {
+               usleep(100);
+               $status = $promisse->checkPromisseState(true);
+           }
+           if ($status === self::STATUS_FULFILLED) {
                $onFulfilled(...$this->promisseResultArgs);
-           } else if ($this->promisseStatus === self::STATUS_REJECTED) {
+           } else if ($status === self::STATUS_REJECTED) {
                if ($onRejected) {
                    $onRejected(...$this->promisseResultArgs);
                }
