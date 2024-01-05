@@ -75,6 +75,18 @@ Also, the return of the promisse uses the shared memory, and it has the same lim
 
 ## Install
 
+### Non-zts
+
+* `pncntl` extension is required
+* `shmop` extension is required
+
+### ZTS
+
+* `parallel` extension is required, to use full features
+* `shmop` extension is required, to use Promisses
+
+### Composer (Non-zts and ZTS)
+
 Just type: `composer require "byjg/phpthread"`
 
 
