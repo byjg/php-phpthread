@@ -21,6 +21,8 @@ class ForkHandler implements ThreadInterface
     private $closure;
     private $pid;
 
+    private $threadResult = null;
+
 
     /**
      * constructor method
@@ -105,17 +107,21 @@ class ForkHandler implements ThreadInterface
             return null;
         }
 
+        if (!empty($this->threadResult)) {
+            return $this->threadResult;
+        }
+
         $key = $this->threadKey;
         $this->threadKey = null;
 
-        $result = SharedMemory::getInstance()->get($key);
+        $this->threadResult = SharedMemory::getInstance()->get($key);
         SharedMemory::getInstance()->delete($key);
 
-        if (is_object($result) && $result instanceof \Throwable) {
-            throw $result;
+        if ($this->threadResult instanceof \Throwable) {
+            throw $this->threadResult;
         }
 
-        return $result;
+        return $this->threadResult;
     }
 
     /**
@@ -129,7 +135,6 @@ class ForkHandler implements ThreadInterface
         if ($this->isAlive()) {
             posix_kill($this->pid, $signal);
 
-            $status = null;
             if ($wait) {
                 pcntl_waitpid($this->pid, $status);
             }
@@ -142,7 +147,6 @@ class ForkHandler implements ThreadInterface
      */
     public function isAlive()
     {
-        $status = null;
         return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
     }
 
