@@ -2,11 +2,13 @@
 
 namespace ByJG\PHPThread\Handler;
 
+use ByJG\PHPThread\Thread;
+
 class ParallelHandler implements ThreadInterface
 {
     protected $closure;
     protected $runtime;
-    protected $future;
+    protected $future = null;
 
     public function execute()
     {
@@ -39,12 +41,25 @@ class ParallelHandler implements ThreadInterface
     public function waitFinish()
     {
         while (!$this->future->cancelled() && !$this->future->done()) {
-            sleep(1);
+            usleep(50000);
         }
     }
 
     public function getClassName()
     {
         return ParallelHandler::class;
+    }
+
+    public function getStatus()
+    {
+        if (empty($this->future)) {
+            return Thread::STATUS_NOT_STARTED;
+        } else if ($this->future->cancelled()) {
+            return Thread::STATUS_ERROR;
+        } else if ($this->future->done()) {
+            return Thread::STATUS_FINISHED;
+        } else {
+            return Thread::STATUS_RUNNING;
+        }
     }
 }

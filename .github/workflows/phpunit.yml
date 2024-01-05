@@ -8,8 +8,6 @@ on:
   pull_request:
     branches:
       - master
-  schedule:
-    - cron: "0 8 * * 1"
 
 jobs:
   Build:
@@ -18,17 +16,13 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.2"
           - "8.1"
           - "8.0"
           - "7.4"
-          - "7.3"
-          - "7.2"
-          - "7.1"
-#          - "7.0"
-#          - "5.6"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/phpunit
@@ -39,17 +33,13 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.2"
           - "8.1"
           - "8.0"
           - "7.4"
-          - "7.3"
-          - "7.2"
-#          - "7.1" # Pthread last stable PHP 7.2
-#          - "7.0"
-#          - "5.6"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install requirements
         run: |
           apt -y -qq update
@@ -64,26 +54,29 @@ jobs:
         if:  ${{ matrix.php-version < '8.0' }}
         run: |
           docker-php-ext-install pcntl
-          pecl install parallel
+          docker-php-ext-install shmop
+          pecl install parallel-1.1.4
           docker-php-ext-enable parallel
       - name: Install Extensions (PHP >= 8.0)
         if:  ${{ matrix.php-version >= '8.0' }}
         run: |
-          git clone https://github.com/krakjoe/parallel -b develop /tmp/parallel
-          docker-php-ext-install /tmp/parallel
           docker-php-ext-install pcntl
+          docker-php-ext-install shmop
+          pecl install parallel
+          docker-php-ext-enable parallel
+
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/phpunit
 
   Documentation:
-    runs-on: 'ubuntu-latest'
+    if: github.ref == 'refs/heads/master'
     needs:
       - Build
       - Build-zts
-    if: github.ref == 'refs/heads/master'
-    env:
-      DOC_GITHUB_TOKEN: '${{ secrets.DOC_TOKEN }}'
-    steps:
-      - uses: actions/checkout@v2
-      - run: curl https://opensource.byjg.com/add-doc.sh | bash /dev/stdin php phpthread
+    uses: byjg/byjg.github.io/.github/workflows/add-doc.yaml@master
+    with:
+      folder: php
+      project: ${{ github.event.repository.name }}
+    secrets: inherit
+

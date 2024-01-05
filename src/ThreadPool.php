@@ -25,23 +25,22 @@ class ThreadPool
 
     protected $poolStarted = false;
 
+    protected $currentId = 0;
+
     /**
      * Queue a new thread worker
      *
      * @param Closure $closure
      * @param array $params The thread parameters
-     * @param string $thid The Thread id to identify the ID
      * @return string
      */
-    public function queueWorker(Closure $closure, $params = [], $thid = null)
+    public function queueWorker(Closure $closure, $params = [])
     {
         if (!is_array($params)) {
             throw new \InvalidArgumentException('The params needs to be an array');
         }
 
-        if (is_null($thid)) {
-            $thid = uniqid("", true);
-        }
+        $thid = $this->currentId++;
 
         $data = new \stdClass;
         $data->closure = $closure;
@@ -61,6 +60,10 @@ class ThreadPool
      */
     public function startPool()
     {
+        if ($this->isPoolStarted()) {
+            return;
+        }
+
         foreach ($this->threadList as $key => $value) {
             $this->startWorker($key);
         }
@@ -70,7 +73,7 @@ class ThreadPool
 
     protected function startWorker($threadItemKey)
     {
-        $thread = new Thread($this->threadList[$threadItemKey]->closure);
+        $thread = Thread::create($this->threadList[$threadItemKey]->closure);
 
         call_user_func_array([$thread, 'execute'], $this->threadList[$threadItemKey]->params);
         $this->threadInstance[$threadItemKey] = $thread;
