@@ -3,6 +3,8 @@
 namespace ByJG\PHPThread\Handler;
 
 use ByJG\Cache\Psr16\ShmopCacheEngine;
+use ByJG\PHPThread\SharedMemory;
+use ByJG\PHPThread\Thread;
 use RuntimeException;
 
 /**
@@ -15,13 +17,10 @@ use RuntimeException;
  */
 class ForkHandler implements ThreadInterface
 {
-    protected $threadKey;
+    protected $threadKey = null;
     private $closure;
     private $pid;
 
-
-    private $maxSharedMemorySize = null;
-    private $defaultPermission = null;
 
     /**
      * constructor method
@@ -29,22 +28,11 @@ class ForkHandler implements ThreadInterface
      * @param int $maxSharedMemorySize
      * @param string $defaultPermission
      */
-    public function __construct($maxSharedMemorySize, $defaultPermission)
+    public function __construct()
     {
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
         }
-
-        if (empty($maxSharedMemorySize)) {
-            $maxSharedMemorySize = 0x100000;
-        }
-
-        if (empty($defaultPermission)) {
-            $defaultPermission = '0700';
-        }
-
-        $this->maxSharedMemorySize = $maxSharedMemorySize;
-        $this->defaultPermission = $defaultPermission;
     }
 
     /**
@@ -88,26 +76,10 @@ class ForkHandler implements ThreadInterface
             // Executed only in PHP 7, will not match in PHP 5.x
             } catch (\Throwable $t) {
                 $this->saveResult($t);
-            // Executed only in PHP 5. Remove when PHP 5.x is no longer necessary.
-            } catch (\Exception $ex) {
-                $this->saveResult($ex);
             }
 
             exit(0);
         }
-    }
-
-    /**
-     * @return ShmopCacheEngine
-     */
-    protected function getSharedMemoryEngine()
-    {
-        return new ShmopCacheEngine(
-            [
-                'max-size' => $this->maxSharedMemorySize,
-                'default-permission' => $this->defaultPermission
-            ]
-        );
     }
 
     /**
@@ -117,7 +89,7 @@ class ForkHandler implements ThreadInterface
      */
     protected function saveResult($object)
     {
-        $this->getSharedMemoryEngine()->set($this->threadKey, $object);
+        SharedMemory::getInstance()->set($this->threadKey, $object);
     }
 
     /**
@@ -136,16 +108,10 @@ class ForkHandler implements ThreadInterface
         $key = $this->threadKey;
         $this->threadKey = null;
 
-        $cache = $this->getSharedMemoryEngine();
-        $result = $cache->get($key);
-        $cache->delete($key);
+        $result = SharedMemory::getInstance()->get($key);
+        SharedMemory::getInstance()->delete($key);
 
-        if (is_object($result) &&
-            ($result instanceof \Exception
-                || $result instanceof \Throwable
-                || $result instanceof \Error
-            )
-        ) {
+        if (is_object($result) && $result instanceof \Throwable) {
             throw $result;
         }
 
@@ -195,8 +161,9 @@ class ForkHandler implements ThreadInterface
 
     public function waitFinish()
     {
-        pcntl_wait($status);
+        //pcntl_wait($status);
         if ($this->isAlive()) {
+            usleep(50000);
             $this->waitFinish();
         }
     }
@@ -204,5 +171,14 @@ class ForkHandler implements ThreadInterface
     public function getClassName()
     {
         return ForkHandler::class;
+    }
+
+    public function getStatus()
+    {
+        if (empty($this->threadKey)) {
+            return Thread::STATUS_NOT_STARTED;
+        }
+
+        return $this->isAlive() ? Thread::STATUS_RUNNING : Thread::STATUS_FINISHED;
     }
 }

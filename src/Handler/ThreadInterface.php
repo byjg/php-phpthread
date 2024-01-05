@@ -6,7 +6,6 @@ use Closure;
 
 interface ThreadInterface
 {
-
     /**
      * Start the thread
      *
@@ -55,4 +54,6 @@ interface ThreadInterface
      * @return string
      */
     public function getClassName();
+
+    public function getStatus();
 }

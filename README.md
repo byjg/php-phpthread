@@ -12,10 +12,15 @@ Polyfill Implementation of Threads in PHP. This class supports both FORK process
 
 This class detects automatically if PHP was compiled:
 
-- with ZTS (--enable-maintainer-zts or --enable-zts) and the extension pthreads (works on Windows also) 
+- with ZTS (--enable-maintainer-zts or --enable-zts) and the extension parallel 
 - with the Process Controle (--enable-pcntl)
 
 and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
+
+```tip
+Although works with a PHP without ZTS build 
+we *do not* recommend use this library using pnctl in non-zts php for PRPODUCTION ENVIRONMENT
+```
 
 ## Notes
 
@@ -49,8 +54,8 @@ $threadClousure = function ($t)
 
 ```php
 // Create the Threads passing a callable
-$thread1 = new ByJG\PHPThread\Thread( $threadClousure );
-$thread2 = new ByJG\PHPThread\Thread( $threadClousure );
+$thread1 = ByJG\PHPThread\Thread::create( $threadClousure );
+$thread2 = ByJG\PHPThread\Thread::create( $threadClousure );
 
 // Start the threads and passing parameters
 $thread1->execute(1);
@@ -97,20 +102,9 @@ echo "\n\nEnded!\n";
 
 **Important Note for the FORK implementation**
 
-In order to get working the 'getResult' of the fork implementation is necessary pass the setup parameters to the
-Thread::setThreadHandlerArguments() method; 
+In order to get working the 'getResult' of the fork implementation it uses the `shared memory` to store the result.
 
-```php
-<?php
-
-$thread = new \ByJG\PHPThread\Thread([$someinstance, $somemethod]);
-$thread->setThreadHandlerArguments(
-    [
-        'max-size' => 0x100000,
-        'default-permission' => '0700'
-    ]
-);
-```
+Do not store big data in the result because it can cause a memory overflow.
 
 ## Install
 
