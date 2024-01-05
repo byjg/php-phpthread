@@ -132,3 +132,13 @@ or
 $instance = new myClass();
 $thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
 ```
+
+## Dependencies
+
+```mermaid
+flowchart TD
+    byjg/phpthread --> byjg/cache-engine
+    byjg/phpthread --> ext-posix
+    byjg/phpthread --> ext-pcntl
+    byjg/phpthread --> ext-pthreads*
+```
