@@ -90,8 +90,6 @@ Also, the return of the promisse uses the shared memory, and it has the same lim
 Just type: `composer require "byjg/phpthread"`
 
 
-## Dependencies
-
 ```mermaid
 flowchart TD
     byjg/phpthread --> byjg/cache-engine
