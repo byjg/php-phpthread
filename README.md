@@ -10,7 +10,8 @@ Threads made easy for PHP.
 
 ## General Concepts 
 
-First of all it is important to understand that PHP is not a language that was designed to work with threads.
+First of all it is important to understand that PHP is not a language that was designed to work
+with threads.
 
 The PHP is a language that was designed to work with a request/response model. 
 This means that the PHP is executed when a request is received and the PHP script is terminated 
@@ -18,28 +19,32 @@ when the response is sent to the client.
 
 There are some native ways to work with threads in PHP or at least to simulate threads.
 
-### Fork
+### Default PHP (Non-ZTS)
 
-The first way is to use the `fork` command. This command is available in most of the Linux/Unix systems.
+The PHP standard distribution is not compiled with the ZTS (Zend Thread Safety) option.
 
-The `fork` command will create a new process, clone of the parent process. It is not a Thread per se, because there are several
-workarounds to make it work like a thread. 
+It means, by default, the process to create threads is using the `fork` command.
+This command is available in most of the Linux/Unix systems.
 
-We use the library [pcntl](https://www.php.net/manual/en/book.pcntl.php) to make it work.
+The `fork` command clone the parent process and create a new process with this clone.
+It is not a Thread per se, because there are several workarounds to make it work like a thread.
+
+The PHP extension [pcntl](https://www.php.net/manual/en/book.pcntl.php) is required to enable it work.
 
 ### PHP ZTS
 
 The second way is to use the ZTS (Zend Thread Safety) version of PHP. 
 PHP is compiled with the option `--enable-zts` and not all distributions have a PHP package compiled with
-this option. 
+this option. This is not standard also.
 
 The ZTS version of PHP is a version that can be executed in a multi-thread environment.
 That is the recommmeded option to work with threads in PHP in production environment.
 
 ## What is PHPThread library?
 
-It is Polyfill Implementation of Threads in PHP. 
-It abstracts the thread implementation we have installed (ZTS or Fork) and provide a common interface to work with threads.
+It is Polyfill Implementation of Threads in PHP.
+It abstracts the thread implementation we have installed (ZTS or Fork) and provide a common
+interface to work with threads.
 
 ## Disclaimer
 
@@ -65,7 +70,7 @@ When we clone a process we cannot have the return of the thread to the main proc
 However, to acomplish this we can use the `shmop` extension to share memory between processes.
 
 Although it is possible in our implementation, **Do not return** big or complex data structures/objects,
-in the return because it can cause a memory overflow.
+in the return because it can exhaust the memory.
 
 ### Promisses
 
@@ -75,7 +80,7 @@ Also, the return of the promisse uses the shared memory, and it has the same lim
 
 ## Install
 
-### Non-zts
+### Non-zts (Default PHP)
 
 * `pncntl` extension is required
 * `shmop` extension is required

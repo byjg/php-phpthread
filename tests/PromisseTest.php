@@ -32,7 +32,8 @@ class PromisseTest extends TestCase
         $this->saveToFile($promise->getPromisseStatus());
 
         $this->saveToFile("C");
-        $this->saveToFile(print_r($promise->await(), true));
+        $result = $promise->await();
+        $this->saveToFile(print_r($result, true));
 
         $this->saveToFile("D");
         $this->saveToFile($promise->getPromisseStatus());
@@ -74,6 +75,69 @@ D
 fulfilled
 E
 New Success: Promise is fulfilled!
+
+EOT
+            ,
+            file_get_contents("/tmp/promisse.txt")
+        );
+    }
+
+    public function testPromisseResolveNested()
+    {
+        $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
+            sleep(1);
+            $resolve("Promise is fulfilled!");
+        });
+
+        $this->saveToFile("A", false);
+        $this->saveToFile($promise->getPromisseStatus());
+
+        $promise
+            ->then(
+                function ($value) {
+                    usleep(100);
+                    $this->saveToFile("Success: $value");
+                },
+                function ($value) {
+                    $this->saveToFile("Failure: $value");
+                }
+            )
+            ->then(
+                function ($value) {
+                    $this->saveToFile("New Success: $value");
+                },
+                function ($value) {
+                    $this->saveToFile("New Failure: $value");
+                }
+            );
+
+        $this->saveToFile("B");
+        $this->saveToFile($promise->getPromisseStatus());
+
+        $this->saveToFile("C");
+        $result = $promise->await();
+        $this->saveToFile(print_r($result, true));
+
+        $this->saveToFile("D");
+        $this->saveToFile($promise->getPromisseStatus());
+
+
+        $this->assertEquals(
+            <<<'EOT'
+A
+pending
+B
+pending
+C
+New Success: Promise is fulfilled!
+Success: Promise is fulfilled!
+Array
+(
+    [0] => Promise is fulfilled!
+)
+
+D
+fulfilled
 
 EOT
             ,
