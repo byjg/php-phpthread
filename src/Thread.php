@@ -5,8 +5,6 @@ namespace ByJG\PHPThread;
 use ByJG\PHPThread\Handler\ForkHandler;
 use ByJG\PHPThread\Handler\ParallelHandler;
 use ByJG\PHPThread\Handler\ThreadInterface;
-use Closure;
-use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -19,13 +17,6 @@ use RuntimeException;
  */
 class Thread
 {
-    const STATUS_NOT_STARTED = 'not-started';
-
-    const STATUS_RUNNING = 'running';
-    const STATUS_FINISHED = 'finished';
-    const STATUS_ERROR = 'error';
-
-
     /**
      * @return ThreadInterface
      */

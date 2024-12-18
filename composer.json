@@ -2,13 +2,13 @@
   "name": "byjg/phpthread",
   "description": "Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation.",
   "require": {
-    "byjg/cache-engine": "4.9.*",
+    "byjg/cache-engine": "^5.0",
     "ext-pcntl": "*",
     "ext-posix": "*",
-    "php": ">=7.4"
+    "php": ">=8.1 <8.4"
   },
   "require-dev": {
-    "phpunit/phpunit": "5.7.*|7.4.*|^9.5"
+    "phpunit/phpunit": "^9.6"
   },
   "suggest": {
     "ext-pthreads": "*"

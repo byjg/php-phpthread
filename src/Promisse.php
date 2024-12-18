@@ -3,16 +3,13 @@
 namespace ByJG\PHPThread;
 
 use ByJG\PHPThread\Handler\ThreadInterface;
+use Closure;
 
 class Promisse implements PromisseInterface
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_FULFILLED = 'fulfilled';
-    const STATUS_REJECTED = 'rejected';
+    protected Closure $promisse;
 
-    protected \Closure $promisse;
-
-    protected string $promisseStatus;
+    protected PromisseStatus $promisseStatus;
 
     protected ThreadInterface $promisseThread;
     protected ThreadInterface $promisseThen;
@@ -21,21 +18,21 @@ class Promisse implements PromisseInterface
 
     protected string $promisseId;
 
-    public function __construct(\Closure $promisse)
+    public function __construct(Closure $promisse)
     {
         $this->promisse = $promisse;
-        $this->promisseStatus = self::STATUS_PENDING;
+        $this->promisseStatus = PromisseStatus::pending;
 
         $this->promisseId = uniqid("p_", true);
 
         $resolve = function () {
             SharedMemory::getInstance()->set($this->promisseId, func_get_args());
-            SharedMemory::getInstance()->set($this->promisseId . "_st", self::STATUS_FULFILLED);
+            SharedMemory::getInstance()->set($this->promisseId . "_st", PromisseStatus::fulfilled);
         };
 
         $reject = function () {
             SharedMemory::getInstance()->set($this->promisseId, func_get_args());
-            SharedMemory::getInstance()->set($this->promisseId . "_st", self::STATUS_REJECTED);
+            SharedMemory::getInstance()->set($this->promisseId . "_st", PromisseStatus::rejected);
         };
 
         $this->promisseThread = Thread::create($promisse);
@@ -45,13 +42,13 @@ class Promisse implements PromisseInterface
         });
     }
 
-    protected function checkPromisseState($keep = false)
+    protected function checkPromisseState(bool $keep = false): PromisseStatus
     {
-        if ($this->promisseStatus !== self::STATUS_PENDING) {
+        if ($this->promisseStatus !== PromisseStatus::pending) {
             return $this->promisseStatus;
         }
 
-        if ($this->promisseThread->getStatus() === Thread::STATUS_FINISHED) {
+        if ($this->promisseThread->getStatus() === ThreadStatus::finished) {
             $tempStatus = SharedMemory::getInstance()->get($this->promisseId . "_st");
             if (empty($tempStatus)) {
                 return $this->promisseStatus;
@@ -73,7 +70,7 @@ class Promisse implements PromisseInterface
         return $this->promisseResultArgs;
     }
 
-    public function getPromisseStatus(): string
+    public function getPromisseStatus(): PromisseStatus
     {
         $this->checkPromisseState();
         return $this->promisseStatus;
@@ -82,22 +79,22 @@ class Promisse implements PromisseInterface
     public function isFulfilled(): bool
     {
         $this->checkPromisseState();
-        return $this->promisseStatus === self::STATUS_FULFILLED;
+        return $this->promisseStatus === PromisseStatus::fulfilled;
    }
 
-   public function then(\Closure $onFulfilled, \Closure $onRejected = null): PromisseInterface
+    public function then(Closure $onFulfilled, Closure $onRejected = null): PromisseInterface
    {
        $promisse = $this;
        $then = function () use ($onFulfilled, $onRejected, $promisse) {
            $promisse->promisseThread->waitFinish();
            $status = $promisse->checkPromisseState(true);
-           while ($status === self::STATUS_PENDING) {
+           while ($status === PromisseStatus::pending) {
                usleep(100);
                $status = $promisse->checkPromisseState(true);
            }
-           if ($status === self::STATUS_FULFILLED) {
+           if ($status === PromisseStatus::fulfilled) {
                $onFulfilled(...$this->promisseResultArgs);
-           } else if ($status === self::STATUS_REJECTED) {
+           } else if ($status === PromisseStatus::rejected) {
                if ($onRejected) {
                    $onRejected(...$this->promisseResultArgs);
                }
@@ -105,7 +102,7 @@ class Promisse implements PromisseInterface
        };
 
        $this->checkPromisseState();
-       if ($this->promisseStatus !== self::STATUS_PENDING) {
+       if ($this->promisseStatus !== PromisseStatus::pending) {
            $then();
        } else {
            $thread = Thread::create($then);
@@ -115,7 +112,7 @@ class Promisse implements PromisseInterface
        return $this;
    }
 
-   public function await()
+    public function await(): array
    {
        $this->promisseThread->waitFinish();
        $this->checkPromisseState();

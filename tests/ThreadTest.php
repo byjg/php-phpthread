@@ -1,9 +1,9 @@
 <?php
 
 
-use PHPUnit\Framework\TestCase;
-
 use ByJG\PHPThread\Thread;
+use ByJG\PHPThread\ThreadStatus;
+use PHPUnit\Framework\TestCase;
 
 class ThreadTest extends TestCase
 {
@@ -17,15 +17,15 @@ class ThreadTest extends TestCase
         $thr1 = Thread::create($closure);
         $thr2 = Thread::create($closure);
 
-        $this->assertEquals(Thread::STATUS_NOT_STARTED, $thr1->getStatus());
-        $this->assertEquals(Thread::STATUS_NOT_STARTED, $thr2->getStatus());
+        $this->assertEquals(ThreadStatus::notStarted, $thr1->getStatus());
+        $this->assertEquals(ThreadStatus::notStarted, $thr2->getStatus());
 
         // Start Threads
         $thr1->execute(2);
         $thr2->execute(1);
 
-        $this->assertEquals(Thread::STATUS_RUNNING, $thr1->getStatus());
-        $this->assertEquals(Thread::STATUS_RUNNING, $thr2->getStatus());
+        $this->assertEquals(ThreadStatus::running, $thr1->getStatus());
+        $this->assertEquals(ThreadStatus::running, $thr2->getStatus());
 
         // Make sure they are running
         $this->assertTrue($thr1->isAlive());
@@ -35,8 +35,8 @@ class ThreadTest extends TestCase
         $thr1->waitFinish();
         $thr2->waitFinish();
 
-        $this->assertEquals(Thread::STATUS_FINISHED, $thr1->getStatus());
-        $this->assertEquals(Thread::STATUS_FINISHED, $thr2->getStatus());
+        $this->assertEquals(ThreadStatus::finished, $thr1->getStatus());
+        $this->assertEquals(ThreadStatus::finished, $thr2->getStatus());
 
         // Make sure they're finished
         $this->assertFalse($thr1->isAlive());

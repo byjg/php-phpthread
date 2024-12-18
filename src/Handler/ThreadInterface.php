@@ -2,6 +2,7 @@
 
 namespace ByJG\PHPThread\Handler;
 
+use ByJG\PHPThread\ThreadStatus;
 use Closure;
 
 interface ThreadInterface
@@ -11,14 +12,14 @@ interface ThreadInterface
      *
      * @throws \RuntimeException
      */
-    public function execute();
+    public function execute(): void;
 
     /**
      * Get the thread result
      *
      * @return mixed
      */
-    public function getResult();
+    public function getResult(): mixed;
 
     /**
      * Kill a thread
@@ -26,34 +27,34 @@ interface ThreadInterface
      * @param int $signal
      * @param bool $wait
      */
-    public function stop($signal = SIGKILL, $wait = false);
+    public function stop(int $signal = SIGKILL, bool $wait = false);
 
     /**
      * Checkif the thread is not Terminated
      *
      * @return bool
      */
-    public function isAlive();
+    public function isAlive(): bool;
 
     /**
      * Set the thread Closure method
      * @param Closure $closure
-     * @return mixed
+     * @return void
      */
-    public function setClosure(Closure $closure);
+    public function setClosure(Closure $closure): void;
 
     /**
      * Wait for the thread finish and join to main thread;
      *
-     * @return mixed
+     * @return void
      */
-    public function waitFinish();
+    public function waitFinish(): void;
 
     /**
      * Return the thread class name
      * @return string
      */
-    public function getClassName();
+    public function getClassName(): string;
 
-    public function getStatus();
+    public function getStatus(): ThreadStatus;
 }

@@ -7,6 +7,9 @@ class PromisseTest extends TestCase
 {
     public function saveToFile($content, $append = true)
     {
+        if ($content instanceof \ByJG\PHPThread\PromisseStatus) {
+            $content = $content->value;
+        }
         file_put_contents("/tmp/promisse.txt", $content . "\n", $append ? FILE_APPEND : 0);
     }
 

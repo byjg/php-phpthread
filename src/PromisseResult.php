@@ -25,11 +25,11 @@
 //    public function getPromisseStatus(): string
 //    {
 //        switch ($this->thread->getStatus()) {
-//            case Thread::STATUS_FINISHED:
+//            case ThreadStatus::finished:
 //                return Promisse::STATUS_FULFILLED;
-//            case Thread::STATUS_RUNNING:
+//            case ThreadStatus::running:
 //                return Promisse::STATUS_PENDING;
-//            case Thread::STATUS_ERROR:
+//            case ThreadStatus::error:
 //                return Promisse::STATUS_REJECTED;
 //        }
 //

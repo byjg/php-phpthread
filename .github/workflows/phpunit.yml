@@ -16,10 +16,9 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.3"
           - "8.2"
           - "8.1"
-          - "8.0"
-          - "7.4"
 
     steps:
       - uses: actions/checkout@v4
@@ -33,10 +32,9 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.3"
           - "8.2"
           - "8.1"
-          - "8.0"
-          - "7.4"
 
     steps:
       - uses: actions/checkout@v4
@@ -50,15 +48,7 @@ jobs:
           php composer-setup.php
           php -r "unlink('composer-setup.php');"
           mv composer.phar /usr/bin/composer
-      - name: Install Extensions (PHP < 8.0)
-        if:  ${{ matrix.php-version < '8.0' }}
-        run: |
-          docker-php-ext-install pcntl
-          docker-php-ext-install shmop
-          pecl install parallel-1.1.4
-          docker-php-ext-enable parallel
       - name: Install Extensions (PHP >= 8.0)
-        if:  ${{ matrix.php-version >= '8.0' }}
         run: |
           docker-php-ext-install pcntl
           docker-php-ext-install shmop

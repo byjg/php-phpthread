@@ -2,7 +2,7 @@
 
 There is a very basic implementation of Promisses. 
 
-It just implements `.then()` and it doesn't have any of the other fetures like chaining, return,  `.all()` , etc. 
+It just implements `.then()` and it doesn't have any of the other features like chaining, return,  `.all()` , etc.
 
 As is today, it is a "fancy" implementation of the Thread class. 
 

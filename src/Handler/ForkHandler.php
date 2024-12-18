@@ -2,10 +2,16 @@
 
 namespace ByJG\PHPThread\Handler;
 
-use ByJG\Cache\Psr16\ShmopCacheEngine;
+use ByJG\Cache\Exception\InvalidArgumentException;
+use ByJG\Cache\Exception\StorageErrorException;
 use ByJG\PHPThread\SharedMemory;
-use ByJG\PHPThread\Thread;
+use ByJG\PHPThread\ThreadStatus;
+use Closure;
+use Error;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Native Implementation of Threads in PHP.
@@ -17,18 +23,16 @@ use RuntimeException;
  */
 class ForkHandler implements ThreadInterface
 {
-    protected $threadKey = null;
-    private $closure;
-    private $pid;
+    protected ?string $threadKey = null;
+    private Closure $closure;
+    private int $pid;
 
-    private $threadResult = null;
+    private mixed $threadResult = null;
 
 
     /**
      * constructor method
      *
-     * @param int $maxSharedMemorySize
-     * @param string $defaultPermission
      */
     public function __construct()
     {
@@ -40,10 +44,10 @@ class ForkHandler implements ThreadInterface
     /**
      * Private function for set the method will be forked;
      *
-     * @param \Closure $closure
-     * @return mixed|void
+     * @param Closure $closure
+     * @return void
      */
-    public function setClosure(\Closure $closure)
+    public function setClosure(Closure $closure): void
     {
         $this->closure = $closure;
     }
@@ -51,9 +55,12 @@ class ForkHandler implements ThreadInterface
     /**
      * Start the thread
      *
-     * @throws RuntimeException
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws StorageErrorException
      */
-    public function execute()
+    public function execute(): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
@@ -76,7 +83,7 @@ class ForkHandler implements ThreadInterface
                     $this->saveResult($return);
                 }
             // Executed only in PHP 7, will not match in PHP 5.x
-            } catch (\Throwable $t) {
+            } catch (Throwable $t) {
                 $this->saveResult($t);
             }
 
@@ -88,8 +95,12 @@ class ForkHandler implements ThreadInterface
      * Save the thread result in a shared memory block
      *
      * @param mixed $object Need to be serializable
+     * @throws InvalidArgumentException
+     * @throws StorageErrorException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
-    protected function saveResult($object)
+    protected function saveResult(mixed $object): void
     {
         SharedMemory::getInstance()->set($this->threadKey, $object);
     }
@@ -98,10 +109,10 @@ class ForkHandler implements ThreadInterface
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
-     * @throws \Error
+     * @throws Error
      * @throws object
      */
-    public function getResult()
+    public function getResult(): mixed
     {
         if (is_null($this->threadKey)) {
             return null;
@@ -117,7 +128,7 @@ class ForkHandler implements ThreadInterface
         $this->threadResult = SharedMemory::getInstance()->get($key);
         SharedMemory::getInstance()->delete($key);
 
-        if ($this->threadResult instanceof \Throwable) {
+        if ($this->threadResult instanceof Throwable) {
             throw $this->threadResult;
         }
 
@@ -130,7 +141,7 @@ class ForkHandler implements ThreadInterface
      * @param int $signal
      * @param bool $wait
      */
-    public function stop($signal = SIGKILL, $wait = false)
+    public function stop(int $signal = SIGKILL, bool $wait = false): void
     {
         if ($this->isAlive()) {
             posix_kill($this->pid, $signal);
@@ -145,7 +156,7 @@ class ForkHandler implements ThreadInterface
      * Check if the forked process is alive
      * @return bool
      */
-    public function isAlive()
+    public function isAlive(): bool
     {
         return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
     }
@@ -163,7 +174,7 @@ class ForkHandler implements ThreadInterface
         }
     }
 
-    public function waitFinish()
+    public function waitFinish(): void
     {
         //pcntl_wait($status);
         if ($this->isAlive()) {
@@ -172,17 +183,17 @@ class ForkHandler implements ThreadInterface
         }
     }
 
-    public function getClassName()
+    public function getClassName(): string
     {
         return ForkHandler::class;
     }
 
-    public function getStatus()
+    public function getStatus(): ThreadStatus
     {
         if (empty($this->threadKey)) {
-            return Thread::STATUS_NOT_STARTED;
+            return ThreadStatus::notStarted;
         }
 
-        return $this->isAlive() ? Thread::STATUS_RUNNING : Thread::STATUS_FINISHED;
+        return $this->isAlive() ? ThreadStatus::running : ThreadStatus::finished;
     }
 }
