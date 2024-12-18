@@ -10,7 +10,6 @@ class PromisseTest extends TestCase
         if ($content instanceof \ByJG\PHPThread\PromisseStatus) {
             $content = $content->value;
         }
-        usleep(rand(1, 9));
         file_put_contents("/tmp/promisse.txt", $content . "\n", $append ? FILE_APPEND : 0);
     }
 
@@ -52,6 +51,11 @@ class PromisseTest extends TestCase
     }
     public function testPromisseResolve()
     {
+        if (extension_loaded('parallel')) {
+            $this->markTestSkipped(
+                'Promisse test is not compatible with parallel extension'
+            );
+        }
         $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
             sleep(1);
             $resolve("Promise is fulfilled!");
@@ -85,6 +89,12 @@ EOT
 
     public function testPromisseResolveNested()
     {
+        if (extension_loaded('parallel')) {
+            $this->markTestSkipped(
+                'Promisse test is not compatible with parallel extension'
+            );
+        }
+
         $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
             sleep(1);
             $resolve("Promise is fulfilled!");
@@ -148,6 +158,12 @@ EOT
 
     public function testPromisseReject()
     {
+        if (extension_loaded('parallel')) {
+            $this->markTestSkipped(
+                'Promisse test is not compatible with parallel extension'
+            );
+        }
+
         $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
             sleep(1);
             $reject("Promise is rejected!");
