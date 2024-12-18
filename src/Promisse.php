@@ -89,6 +89,7 @@ class Promisse implements PromisseInterface
        $promisse->parent = $this;
 
        $then = function () use ($onFulfilled, $onRejected, $promisse) {
+           echo "class: " . get_class($promisse->promisseThread) . "\n";
            $promisse->promisseThread->waitFinish();
            $status = $promisse->checkPromisseState(true);
            while ($status === PromisseStatus::pending) {
