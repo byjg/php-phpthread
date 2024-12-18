@@ -28,12 +28,8 @@ echo $promise->getPromisseStatus() . "\n";
 // This implementation doesn't have any of the other fetures like chaining, return,  `.all()` , etc.
 $promise
     ->then(
-        function ($value) {
-            echo "Success: $value\n";
-        },
-        function ($value) {
-            echo "Failure: $value\n";
-        }
+        fn($value) => "Success: $value\n",
+        fn($value) => "Failure: $value\n"
     );
 
 // The status is still pending
@@ -53,12 +49,8 @@ echo $promise->getPromisseStatus() . "\n";
 echo "E\n";
 $promise
     ->then(
-        function ($value) {
-            echo "New Success: $value\n";
-        },
-        function ($value) {
-            echo "New Failure: $value\n";
-        }
+        fn($value) => "New Success: $value\n",
+        fn($value) => "New Failure: $value\n"
     );
 ```
 
@@ -70,7 +62,6 @@ pending
 B
 pending
 C
-Success: Promise is fulfilled!
 Array
 (
     [0] => Promise is fulfilled!
