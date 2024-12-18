@@ -10,6 +10,7 @@ class PromisseTest extends TestCase
         if ($content instanceof \ByJG\PHPThread\PromisseStatus) {
             $content = $content->value;
         }
+        usleep(rand(1, 9));
         file_put_contents("/tmp/promisse.txt", $content . "\n", $append ? FILE_APPEND : 0);
     }
 
@@ -95,7 +96,7 @@ EOT
         $promise
             ->then(
                 function ($value) {
-                    usleep(100);
+                    usleep(500);
                     $this->saveToFile("Success: $value");
                 },
                 function ($value) {
