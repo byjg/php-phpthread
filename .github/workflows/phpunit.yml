@@ -55,6 +55,8 @@ jobs:
           pecl install parallel
           docker-php-ext-enable parallel
 
+      - name: installed extensions
+        run: php -m
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/phpunit
