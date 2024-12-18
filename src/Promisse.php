@@ -12,7 +12,7 @@ class Promisse implements PromisseInterface
     protected PromisseStatus $promisseStatus;
 
     protected ThreadInterface $promisseThread;
-    protected ThreadInterface $promisseThen;
+    protected Promisse $parent;
 
     protected array $promisseResultArgs = [];
 
@@ -84,7 +84,10 @@ class Promisse implements PromisseInterface
 
     public function then(Closure $onFulfilled, Closure $onRejected = null): PromisseInterface
    {
-       $promisse = $this;
+       // Because of the Thread, we need to set the $this in a variable
+       $promisse = clone $this;
+       $promisse->parent = $this;
+
        $then = function () use ($onFulfilled, $onRejected, $promisse) {
            $promisse->promisseThread->waitFinish();
            $status = $promisse->checkPromisseState(true);
@@ -92,11 +95,12 @@ class Promisse implements PromisseInterface
                usleep(100);
                $status = $promisse->checkPromisseState(true);
            }
+           $promisse->parent->promisseStatus = $status;
            if ($status === PromisseStatus::fulfilled) {
-               $onFulfilled(...$this->promisseResultArgs);
+               $onFulfilled(...$promisse->promisseResultArgs);
            } else if ($status === PromisseStatus::rejected) {
                if ($onRejected) {
-                   $onRejected(...$this->promisseResultArgs);
+                   $onRejected(...$promisse->promisseResultArgs);
                }
            }
        };
