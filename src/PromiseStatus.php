@@ -2,7 +2,7 @@
 
 namespace ByJG\PHPThread;
 
-enum PromisseStatus: string
+enum PromiseStatus: string
 {
     case pending = 'pending';
     case fulfilled = 'fulfilled';

@@ -3,13 +3,13 @@
 namespace ByJG\PHPThread;
 
 
-class PromisseResult
+class PromiseResult
 {
     protected mixed $result;
 
-    protected PromisseStatus $status;
+    protected PromiseStatus $status;
 
-    public function __construct(mixed $result, PromisseStatus $status)
+    public function __construct(mixed $result, PromiseStatus $status)
     {
         $this->result = $result;
         $this->status = $status;
@@ -20,7 +20,7 @@ class PromisseResult
         return $this->result;
     }
 
-    public function getStatus(): PromisseStatus
+    public function getStatus(): PromiseStatus
     {
         return $this->status;
     }

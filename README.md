@@ -60,7 +60,7 @@ PHP is not a language designed to work with thread as node or java is.
 
 - [Thread](docs/thread.md)
 - [Thread Pool](docs/threadpool.md)
-- [Promisses (**experimental**)](docs/promisses.md)
+- [Promises (**experimental**)](docs/promises.md)
 
 ## Limitations
 
@@ -72,11 +72,11 @@ However, to acomplish this we can use the `shmop` extension to share memory betw
 Although it is possible in our implementation, **Do not return** big or complex data structures/objects,
 in the return because it can exhaust the memory.
 
-### Promisses
+### Promises
 
-Our implementation is a very limited version of Promisses, and it has only the `.then()` method without chainning.
+Our implementation is a very limited version of Promises, and it has only the `.then()` method without chainning.
 
-Also, the return of the promisse uses the shared memory, and it has the same limitation of the Thread return. 
+Also, the return of the promise uses the shared memory, and it has the same limitation of the Thread return.
 
 ## Install
 
@@ -88,7 +88,7 @@ Also, the return of the promisse uses the shared memory, and it has the same lim
 ### ZTS
 
 * `parallel` extension is required, to use full features
-* `shmop` extension is required, to use Promisses
+* `shmop` extension is required, to use Promises
 
 ### Composer (Non-zts and ZTS)
 

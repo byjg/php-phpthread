@@ -3,20 +3,20 @@
 
 use PHPUnit\Framework\TestCase;
 
-class PromisseTest extends TestCase
+class PromiseTest extends TestCase
 {
     public function saveToFile($content, $append = true)
     {
-        if ($content instanceof \ByJG\PHPThread\PromisseStatus) {
+        if ($content instanceof \ByJG\PHPThread\PromiseStatus) {
             $content = $content->value;
         }
-        file_put_contents("/tmp/promisse.txt", $content . "\n", $append ? FILE_APPEND : 0);
+        file_put_contents("/tmp/promise.txt", $content . "\n", $append ? FILE_APPEND : 0);
     }
 
-    public function validatePromisses(\ByJG\PHPThread\PromisseInterface $promise)
+    public function validatePromises(\ByJG\PHPThread\PromiseInterface $promise): void
     {
         $this->saveToFile("A", false);
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
         $promise
             ->then(
@@ -29,14 +29,14 @@ class PromisseTest extends TestCase
             );
 
         $this->saveToFile("B");
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
         $this->saveToFile("C");
         $result = $promise->await();
         $this->saveToFile(print_r($result, true));
 
         $this->saveToFile("D");
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
         $this->saveToFile("E");
         $promise
@@ -49,19 +49,20 @@ class PromisseTest extends TestCase
                 }
             );
     }
-    public function testPromisseResolve()
+
+    public function testPromiseResolve()
     {
         if (extension_loaded('parallel')) {
             $this->markTestSkipped(
-                'Promisse test is not compatible with parallel extension'
+                'Promise test is not compatible with parallel extension'
             );
         }
-        $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
+        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
             sleep(1);
             $resolve("Promise is fulfilled!");
         });
 
-        $this->validatePromisses($promise);
+        $this->validatePromises($promise);
 
         $this->assertEquals(
 <<<'EOT'
@@ -83,25 +84,25 @@ New Success: Promise is fulfilled!
 
 EOT
             ,
-            file_get_contents("/tmp/promisse.txt")
+            file_get_contents("/tmp/promise.txt")
         );
     }
 
-    public function testPromisseResolveNested()
+    public function testPromiseResolveNested()
     {
         if (extension_loaded('parallel')) {
             $this->markTestSkipped(
-                'Promisse test is not compatible with parallel extension'
+                'Promise test is not compatible with parallel extension'
             );
         }
 
-        $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
+        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
             sleep(1);
             $resolve("Promise is fulfilled!");
         });
 
         $this->saveToFile("A", false);
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
         $promise
             ->then(
@@ -123,14 +124,14 @@ EOT
             );
 
         $this->saveToFile("B");
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
         $this->saveToFile("C");
         $result = $promise->await();
         $this->saveToFile(print_r($result, true));
 
         $this->saveToFile("D");
-        $this->saveToFile($promise->getPromisseStatus());
+        $this->saveToFile($promise->getPromiseStatus());
 
 
         $this->assertEquals(
@@ -152,24 +153,24 @@ fulfilled
 
 EOT
             ,
-            file_get_contents("/tmp/promisse.txt")
+            file_get_contents("/tmp/promise.txt")
         );
     }
 
-    public function testPromisseReject()
+    public function testPromiseReject()
     {
         if (extension_loaded('parallel')) {
             $this->markTestSkipped(
-                'Promisse test is not compatible with parallel extension'
+                'Promise test is not compatible with parallel extension'
             );
         }
 
-        $promise = new \ByJG\PHPThread\Promisse(function ($resolve, $reject) {
+        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
             sleep(1);
             $reject("Promise is rejected!");
         });
 
-        $this->validatePromisses($promise);
+        $this->validatePromises($promise);
 
         $this->assertEquals(
             <<<'EOT'
@@ -191,7 +192,7 @@ New Failure: Promise is rejected!
 
 EOT
             ,
-            file_get_contents("/tmp/promisse.txt")
+            file_get_contents("/tmp/promise.txt")
         );
     }
 
