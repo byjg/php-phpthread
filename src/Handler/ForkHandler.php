@@ -122,17 +122,21 @@ class ForkHandler implements ThreadInterface
             return $this->threadResult;
         }
 
-        $key = $this->threadKey;
-        $this->threadKey = null;
-
-        $this->threadResult = SharedMemory::getInstance()->get($key);
-        SharedMemory::getInstance()->delete($key);
+        $this->threadResult = SharedMemory::getInstance()->get($this->threadKey);
 
         if ($this->threadResult instanceof Throwable) {
             throw $this->threadResult;
         }
 
         return $this->threadResult;
+    }
+
+    public function __destruct()
+    {
+        if (isset($this->pid) && $this->pid && !empty($this->threadKey)) {
+            echo "Destructing Thread {$this->threadKey} \n";
+            SharedMemory::getInstance()->delete($this->threadKey);
+        }
     }
 
     /**

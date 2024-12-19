@@ -10,8 +10,10 @@ interface PromiseInterface
 
     public function getPromiseStatus(): PromiseStatus;
 
+    public function getPromiseResult(): ?PromiseResult;
+
     public function isFulfilled(): bool;
 
-    public function await(): array;
+    public function await(): mixed;
 
 }

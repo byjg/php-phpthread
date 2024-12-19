@@ -1,200 +1,178 @@
 <?php
 
 
+use ByJG\PHPThread\Promise;
+use ByJG\PHPThread\PromiseStatus;
 use PHPUnit\Framework\TestCase;
 
 class PromiseTest extends TestCase
 {
-    public function saveToFile($content, $append = true)
+    public function testPromiseFulfilled()
     {
-        if ($content instanceof \ByJG\PHPThread\PromiseStatus) {
-            $content = $content->value;
-        }
-        file_put_contents("/tmp/promise.txt", $content . "\n", $append ? FILE_APPEND : 0);
+        echo "A\n";
+        $x = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        echo "B\n";
+
+        // Test if the promise is pending
+        $this->assertEquals(1, $x->await());
+
+        echo "C\n";
+
+        // Test if the promise is fulfilled
+        $this->assertEquals(PromiseStatus::fulfilled, $x->getPromiseStatus());
+
+        echo "D\n";
+
+        // Test then
+        $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 2)->await());
+        $this->assertEquals(11, $x->then(fn($resolve) => $resolve + 10)->await());
+
+        echo "E\n";
     }
 
-    public function validatePromises(\ByJG\PHPThread\PromiseInterface $promise): void
+    public function testPromiseFulfilledSequence()
     {
-        $this->saveToFile("A", false);
-        $this->saveToFile($promise->getPromiseStatus());
+        $result = Promise::create(function ($resolve, $reject) {
+            $resolve(1);
+        })
+            ->then(fn($resolve) => $resolve + 2)
+            ->then(fn($resolve) => $resolve + 10)
+            ->await();
 
-        $promise
+        $this->assertEquals(13, $result);
+    }
+
+    public function testPromiseRejected()
+    {
+        $x = new Promise(function ($resolve, $reject) {
+            $reject(1);
+        });
+
+        // Test if the promise is pending
+        $this->assertEquals(1, $x->await());
+
+        // Test if the promise is rejected
+        $this->assertEquals(PromiseStatus::rejected, $x->getPromiseStatus());
+
+        // Test then
+        $this->assertEquals(6, $x->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
+        $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)->await());
+    }
+
+    public function testPromiseRejectedSequence()
+    {
+        $result = Promise::create(function ($resolve, $reject) {
+            $reject(1);
+        })
+            ->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)
+            ->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)
+            ->await();
+
+        $this->assertEquals(8, $result);
+    }
+
+    public function testAllFulfilled()
+    {
+        $promise1 = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $resolve(2);
+        });
+
+        $promise3 = new Promise(function ($resolve, $reject) {
+            $resolve(3);
+        });
+
+        $result = Promise::all($promise1, $promise2, $promise3)->await();
+
+        $this->assertEquals([1, 2, 3], $result);
+    }
+
+    public function testAllReject()
+    {
+        $promise1 = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $reject(2);
+        });
+
+        $promise3 = new Promise(function ($resolve, $reject) {
+            $resolve(3);
+        });
+
+        $result = Promise::all($promise1, $promise2, $promise3)
             ->then(
-                function ($value) {
-                    $this->saveToFile("Success: $value");
-                },
-                function ($value) {
-                    $this->saveToFile("Failure: $value");
-                }
-            );
+                fn($resolve) => "Success: $resolve",
+                fn($reason) => "Reason: $reason"
+            )->await();
 
-        $this->saveToFile("B");
-        $this->saveToFile($promise->getPromiseStatus());
+        $this->assertEquals("Reason: 2", $result);
+    }
 
-        $this->saveToFile("C");
+    public function testRaceFulfilled()
+    {
+        $promise1 = new Promise(function ($resolve, $reject) {
+            sleep(1);
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $resolve(2);
+        });
+
+        $promise3 = new Promise(function ($resolve, $reject) {
+            sleep(1);
+            $resolve(3);
+        });
+
+        $result = Promise::race($promise1, $promise2, $promise3)->await();
+
+        $this->assertEquals(2, $result);
+
+    }
+
+    public function testPromiseException()
+    {
+        $promise = new Promise(function ($resolve, $reject) {
+            throw new \Exception('Error Message');
+        });
+
         $result = $promise->await();
-        $this->saveToFile(print_r($result, true));
 
-        $this->saveToFile("D");
-        $this->saveToFile($promise->getPromiseStatus());
-
-        $this->saveToFile("E");
-        $promise
-            ->then(
-                function ($value) {
-                    $this->saveToFile("New Success: $value");
-                },
-                function ($value) {
-                    $this->saveToFile("New Failure: $value");
-                }
-            );
+        $this->assertEquals('Error Message', $result->getMessage());
     }
 
-    public function testPromiseResolve()
+    public function testPromiseException2()
     {
-        if (extension_loaded('parallel')) {
-            $this->markTestSkipped(
-                'Promise test is not compatible with parallel extension'
-            );
-        }
-        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
-            sleep(1);
-            $resolve("Promise is fulfilled!");
+        $promise = new Promise(function ($resolve, $reject) {
+            throw new \Exception('Error Message 2');
         });
 
-        $this->validatePromises($promise);
+        $result = $promise->then(
+            fn($resolve) => $resolve,
+            fn($reject) => $reject->getMessage()
+        )->await();
 
-        $this->assertEquals(
-<<<'EOT'
-A
-pending
-B
-pending
-C
-Success: Promise is fulfilled!
-Array
-(
-    [0] => Promise is fulfilled!
-)
-
-D
-fulfilled
-E
-New Success: Promise is fulfilled!
-
-EOT
-            ,
-            file_get_contents("/tmp/promise.txt")
-        );
+        $this->assertEquals('Error Message 2', $result);
     }
 
-    public function testPromiseResolveNested()
+    public function testPromiseException3()
     {
-        if (extension_loaded('parallel')) {
-            $this->markTestSkipped(
-                'Promise test is not compatible with parallel extension'
-            );
-        }
-
-        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
-            sleep(1);
-            $resolve("Promise is fulfilled!");
+        $promise = new Promise(function ($resolve, $reject) {
+            $resolve(1);
         });
 
-        $this->saveToFile("A", false);
-        $this->saveToFile($promise->getPromiseStatus());
+        $result = $promise->then(
+            fn($resolve) => throw new \Exception('Error Message 3'),
+        )->await();
 
-        $promise
-            ->then(
-                function ($value) {
-                    usleep(500);
-                    $this->saveToFile("Success: $value");
-                },
-                function ($value) {
-                    $this->saveToFile("Failure: $value");
-                }
-            )
-            ->then(
-                function ($value) {
-                    $this->saveToFile("New Success: $value");
-                },
-                function ($value) {
-                    $this->saveToFile("New Failure: $value");
-                }
-            );
-
-        $this->saveToFile("B");
-        $this->saveToFile($promise->getPromiseStatus());
-
-        $this->saveToFile("C");
-        $result = $promise->await();
-        $this->saveToFile(print_r($result, true));
-
-        $this->saveToFile("D");
-        $this->saveToFile($promise->getPromiseStatus());
-
-
-        $this->assertEquals(
-            <<<'EOT'
-A
-pending
-B
-pending
-C
-New Success: Promise is fulfilled!
-Success: Promise is fulfilled!
-Array
-(
-    [0] => Promise is fulfilled!
-)
-
-D
-fulfilled
-
-EOT
-            ,
-            file_get_contents("/tmp/promise.txt")
-        );
+        $this->assertEquals('Error Message 3', $result->getMessage());
     }
-
-    public function testPromiseReject()
-    {
-        if (extension_loaded('parallel')) {
-            $this->markTestSkipped(
-                'Promise test is not compatible with parallel extension'
-            );
-        }
-
-        $promise = new \ByJG\PHPThread\Promise(function ($resolve, $reject) {
-            sleep(1);
-            $reject("Promise is rejected!");
-        });
-
-        $this->validatePromises($promise);
-
-        $this->assertEquals(
-            <<<'EOT'
-A
-pending
-B
-pending
-C
-Failure: Promise is rejected!
-Array
-(
-    [0] => Promise is rejected!
-)
-
-D
-rejected
-E
-New Failure: Promise is rejected!
-
-EOT
-            ,
-            file_get_contents("/tmp/promise.txt")
-        );
-    }
-
-
 }

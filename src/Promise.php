@@ -20,21 +20,43 @@ class Promise implements PromiseInterface
         $this->promise = $promise;
         $this->promiseStatus = PromiseStatus::pending;
 
-        $this->promiseId = uniqid("p_", true);
+        $this->promiseId = "p_" . bin2hex(random_bytes(16));
 
-        $resolve = function () {
-            SharedMemory::getInstance()->set($this->promiseId, new PromiseResult(func_get_args(), PromiseStatus::fulfilled), 60);
+        $fn = function () use ($promise) {
+            $resolve = function ($value = null) {
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::fulfilled), 60);
+            };
+
+            $reject = function ($value = null) {
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::rejected), 60);
+            };
+
+            try {
+                $promise($resolve, $reject);
+            } catch (\Exception $ex) {
+                $reject($ex);
+            }
         };
 
-        $reject = function () {
-            SharedMemory::getInstance()->set($this->promiseId, new PromiseResult(func_get_args(), PromiseStatus::rejected), 60);
-        };
+        echo "create: {$this->promiseId} \n";
+        $this->promiseThread = Thread::create($fn);
+        $this->promiseThread->execute();
 
-        $this->promiseThread = Thread::create($promise);
-        $this->promiseThread->execute($resolve, $reject);
     }
 
-    protected function getPromiseResult(): ?PromiseResult
+    public function __destruct()
+    {
+        $result = $this->promiseThread->isAlive() ? "true" : "false";
+        echo "Destructing Promise {$this->promiseId} - {$result} \n";
+        //SharedMemory::getInstance()->delete($this->promiseId);
+    }
+
+    public static function create(Closure $promise): PromiseInterface
+    {
+        return new Promise($promise);
+    }
+
+    public function getPromiseResult(): ?PromiseResult
     {
         return SharedMemory::getInstance()->get($this->promiseId);
     }
@@ -51,41 +73,71 @@ class Promise implements PromiseInterface
     public function isFulfilled(): bool
     {
         return $this->getPromiseStatus() === PromiseStatus::fulfilled;
-   }
+    }
 
     public function then(Closure $onFulfilled, Closure $onRejected = null): PromiseInterface
-   {
-       $promise = $this;
-       $then = function () use ($onFulfilled, $onRejected, $promise) {
-           $status = $promise->getPromiseStatus();
-           while ($status === PromiseStatus::pending) {
-               usleep(100);
-               $status = $promise->getPromiseStatus();
-           }
-           $args = $promise->getPromiseResult()->getResult();
-           if ($status === PromiseStatus::fulfilled) {
-               $onFulfilled(...$args);
-           } else if ($status === PromiseStatus::rejected) {
-               if ($onRejected) {
-                   $onRejected(...$args);
-               }
-           }
-       };
+    {
+        $promise = $this;
+        $then = function ($resolve, $reject) use ($onFulfilled, $onRejected, $promise) {
+            $status = $promise->getPromiseStatus();
+            while ($status === PromiseStatus::pending) {
+                $status = $promise->getPromiseStatus();
+            }
+            $args = $promise->getPromiseResult()->getResult();
+            if ($status === PromiseStatus::fulfilled) {
+                $resolve($onFulfilled($args));
+            } else if ($status === PromiseStatus::rejected) {
+                if ($onRejected) {
+                    $reject($onRejected($args));
+                }
+            }
+        };
 
-       if ($this->getPromiseStatus() !== PromiseStatus::pending) {
-           $then();
-       } else {
-           $thread = Thread::create($then);
-           $thread->execute();
-       }
+        return new Promise($then);
+    }
 
-       return $this;
-   }
+    public function await(): mixed
+    {
+        $this->promiseThread->waitFinish();
+        $this->getPromiseStatus();
+        return $this->getPromiseResult()->getResult();
+    }
 
-    public function await(): array
-   {
-       $this->promiseThread->waitFinish();
-       $this->getPromiseStatus();
-       return $this->getPromiseResult()->getResult();
-   }
+    public static function all(PromiseInterface ...$promises): PromiseInterface
+    {
+        return new Promise(function ($resolve, $reject) use ($promises) {
+            $results = [];
+            while (count($promises) > 0) {
+                foreach ($promises as $key => $promise) {
+                    if ($promise->getPromiseStatus() === PromiseStatus::rejected) {
+                        $reject($promise->getPromiseResult()->getResult());
+                        return;
+                    }
+                    if ($promise->getPromiseStatus() === PromiseStatus::fulfilled) {
+                        $results[] = $promise->getPromiseResult()->getResult();
+                        unset($promises[$key]);
+                    }
+                }
+            }
+            $resolve($results);
+        });
+    }
+
+    public static function race(PromiseInterface ...$promises): PromiseInterface
+    {
+        return new Promise(function ($resolve, $reject) use ($promises) {
+            while (count($promises) > 0) {
+                foreach ($promises as $key => $promise) {
+                    if ($promise->getPromiseStatus() === PromiseStatus::rejected) {
+                        $reject($promise->getPromiseResult()->getResult());
+                        return;
+                    }
+                    if ($promise->getPromiseStatus() === PromiseStatus::fulfilled) {
+                        $resolve($promise->getPromiseResult()->getResult());
+                        return;
+                    }
+                }
+            }
+        });
+    }
 }
