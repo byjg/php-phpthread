@@ -142,6 +142,17 @@ class Promise implements PromiseInterface
     /**
      * @inheritDoc
      */
+    public function finally(Closure $onFinally): PromiseInterface
+    {
+        return $this->then(
+            fn($value) => $onFinally($value),
+            fn($reason) => $onFinally($reason)
+        );
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function await(): mixed
     {
         $this->thread->join();

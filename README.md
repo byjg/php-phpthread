@@ -76,8 +76,9 @@ in the return because it can exhaust the memory.
 
 This implementation is a limited version of Promises. The Current implemented methods:
 
-- `$->then` - Execute a callback when the promise is resolved or rejected
+- `$->then` - Execute a callback when the promise is resolved
 - `$->catch` - Execute a callback when the promise is rejected
+- `$->finally` - Execute a callback when the promise is resolved or rejected
 - `Promise::resolve` - Resolve a promise
 - `Promise::reject` - Reject a promise
 - `Promise::all` - Wait for all promises to be resolved

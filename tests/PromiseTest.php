@@ -267,4 +267,34 @@ class PromiseTest extends TestCase
 
         $this->assertEquals(1, $result);
     }
+
+    public function testFinally()
+    {
+        $promise = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $result = $promise
+            ->then(fn($resolve) => $resolve)
+            ->catch(fn($reject) => $reject + 100)
+            ->finally(fn($valie) => 2 + $valie)
+            ->await();
+
+        $this->assertEquals(3, $result);
+    }
+
+    public function testFinallyReject()
+    {
+        $promise = new Promise(function ($resolve, $reject) {
+            $reject(1);
+        });
+
+        $result = $promise
+            ->then(fn($resolve) => $resolve)
+            ->catch(fn($reject) => $reject + 100)
+            ->finally(fn($valie) => 2 + $valie)
+            ->await();
+
+        $this->assertEquals(103, $result);
+    }
 }

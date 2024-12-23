@@ -24,6 +24,14 @@ interface PromiseInterface
     public function catch(Closure $onRejected): PromiseInterface;
 
     /**
+     * Add a final handler to the promise.
+     *
+     * @param Closure $onFinally The callback to execute when the promise is settled.
+     * @return PromiseInterface A new promise for chaining further actions.
+     */
+    public function finally(Closure $onFinally): PromiseInterface;
+
+    /**
      * Retrieve the current status of the promise.
      *
      * @return PromiseStatus The status of the promise (e.g., PENDING, FULFILLED, REJECTED).

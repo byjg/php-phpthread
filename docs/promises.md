@@ -52,7 +52,46 @@ pending
 Success: Promise is fulfilled!
 ```
 
-## Resolve method
+## Promise Methods
+
+### Then method
+
+The `then` method is used to attach a callback to the promise. The first parameter is the callback to be executed when
+the promise is resolved.
+
+The second parameter is the callback to be executed when the promise is rejected.
+
+```php
+<?php    
+$promise->then(
+    fn($resolve) => "Success: $resolve\n",
+    fn($reject) => "Failure: $reject\n"
+);
+```
+
+### Catch method
+
+The `catch` method is used to attach a callback to the promise. The callback will be executed when the promise is
+rejected.
+
+```php
+<?php
+$promise->catch(fn($reject) => "Failure: $reject\n");
+```
+
+### Finally method
+
+The `finally` method is used to attach a callback to the promise. The callback will be executed when the promise is
+resolved or rejected.
+
+```php
+<?php
+$promise->finally(fn($result) => "Finally: $result\n");
+```
+
+## Promise Static Methods
+
+### Resolve method
 
 The `resolve` method is used to fulfill the promise. It will execute the callback attached to the promise.
 
@@ -62,7 +101,7 @@ $promise = Promise::resolve(5);
 $promise->then(fn($resolve) => $resolve + 2)->await()  // 7
 ```
 
-## Reject method
+### Reject method
 
 The `reject` method is used to reject the promise. It will execute the callback attached to the promise.
 
@@ -71,7 +110,7 @@ $promise = Promise::reject(6);
 $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject * 2)->await() // 12
 ```
 
-## All method
+### All method
 
 The `all` method is used to wait for all promises to be fulfilled or rejected.
 
@@ -83,7 +122,7 @@ $promise2 = Promise::resolve(6);
 Promise::all($promise1, $promise2)->await();  // [5, 6]
 ```
 
-## Race method
+### Race method
 
 The `race` method is used to wait for the first promise to be fulfilled or rejected.
 
