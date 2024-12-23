@@ -21,26 +21,26 @@ class ThreadTest extends TestCase
         $this->assertEquals(ThreadStatus::notStarted, $thr2->getStatus());
 
         // Start Threads
-        $thr1->execute(2);
-        $thr2->execute(1);
+        $thr1->start(2);
+        $thr2->start(1);
 
         $this->assertEquals(ThreadStatus::running, $thr1->getStatus());
         $this->assertEquals(ThreadStatus::running, $thr2->getStatus());
 
         // Make sure they are running
-        $this->assertTrue($thr1->isAlive());
-        $this->assertTrue($thr2->isAlive());
+        $this->assertTrue($thr1->isRunning());
+        $this->assertTrue($thr2->isRunning());
 
         // Wait to Finish
-        $thr1->waitFinish();
-        $thr2->waitFinish();
+        $thr1->join();
+        $thr2->join();
 
         $this->assertEquals(ThreadStatus::finished, $thr1->getStatus());
         $this->assertEquals(ThreadStatus::finished, $thr2->getStatus());
 
         // Make sure they're finished
-        $this->assertFalse($thr1->isAlive());
-        $this->assertFalse($thr2->isAlive());
+        $this->assertFalse($thr1->isRunning());
+        $this->assertFalse($thr2->isRunning());
 
         // Get the thread result
         $this->assertEquals(6, $thr1->getResult());

@@ -63,7 +63,7 @@ class ForkHandler implements ThreadInterface
      * @throws NotFoundExceptionInterface
      * @throws StorageErrorException
      */
-    public function execute(...$args): void
+    public function start(...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
@@ -147,9 +147,9 @@ class ForkHandler implements ThreadInterface
      * @param int $signal
      * @param bool $wait
      */
-    public function stop(int $signal = SIGKILL, bool $wait = false): void
+    public function terminate(int $signal = SIGKILL, bool $wait = false): void
     {
-        if ($this->isAlive()) {
+        if ($this->isRunning()) {
             posix_kill($this->pid, $signal);
 
             if ($wait) {
@@ -162,7 +162,7 @@ class ForkHandler implements ThreadInterface
      * Check if the forked process is alive
      * @return bool
      */
-    public function isAlive(): bool
+    public function isRunning(): bool
     {
         return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
     }
@@ -180,10 +180,10 @@ class ForkHandler implements ThreadInterface
         }
     }
 
-    public function waitFinish(): void
+    public function join(): void
     {
         //pcntl_wait($status);
-        while ($this->isAlive()) {
+        while ($this->isRunning()) {
             usleep(100);
         }
     }
@@ -204,6 +204,6 @@ class ForkHandler implements ThreadInterface
             return ThreadStatus::notStarted;
         }
 
-        return $this->isAlive() ? ThreadStatus::running : ThreadStatus::finished;
+        return $this->isRunning() ? ThreadStatus::running : ThreadStatus::finished;
     }
 }

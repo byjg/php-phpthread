@@ -8,21 +8,21 @@ after the pool is started.
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
 // Create and queue the threads with call parameters
-$threadPool->queueWorker( $threadClousure, 1);
-$threadPool->queueWorker( $threadClousure, 2);
+$threadPool->addWorker( $threadClousure, 1);
+$threadPool->addWorker( $threadClousure, 2);
 
 // Starts all the threads in the queue
-$threadPool->startPool();
+$threadPool->startAll();
 
 // Add more workers after the pool is started:
-$threadPool->queueWorker( $threadClousure, 3);
-$threadPool->queueWorker( $threadClousure, 4);
+$threadPool->addWorker( $threadClousure, 3);
+$threadPool->addWorker( $threadClousure, 4);
 
 // Wait until there is no more active workers
-$threadPool->waitWorkers();
+$threadPool->waitForCompletion();
 
 // Get the return value from the thread.
-foreach ($threadPool->getThreads() as $thid) {
+foreach ($threadPool->listThreads() as $thid) {
     echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
 }
 

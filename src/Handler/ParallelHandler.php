@@ -11,7 +11,7 @@ class ParallelHandler implements ThreadInterface
     protected Runtime $runtime;
     protected $future = null;
 
-    public function execute(): void
+    public function start(): void
     {
         $fnArgs = func_get_args();
 
@@ -24,12 +24,12 @@ class ParallelHandler implements ThreadInterface
         return $this->future->value();
     }
 
-    public function stop(int $signal = SIGKILL, bool $wait = false)
+    public function terminate(int $signal = SIGKILL, bool $wait = false)
     {
         $this->runtime->kill();
     }
 
-    public function isAlive(): bool
+    public function isRunning(): bool
     {
         return !$this->future->cancelled() && !$this->future->done();
     }
@@ -39,7 +39,7 @@ class ParallelHandler implements ThreadInterface
         $this->closure = $closure;
     }
 
-    public function waitFinish(): void
+    public function join(): void
     {
         while (!$this->future->cancelled() && !$this->future->done()) {
             usleep(50000);

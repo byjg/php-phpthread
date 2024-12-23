@@ -26,7 +26,7 @@ foreach (range(1, 10) as $i) {
 }
 
 foreach ($promiseArray as $promise) {
-    echo $promise->getPromiseStatus()->value . "\n";
+    echo $promise->getStatus()->value . "\n";
 }
 
 foreach ($promiseArray as $promise) {

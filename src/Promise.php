@@ -9,17 +9,17 @@ class Promise implements PromiseInterface
 {
     protected Closure $promise;
 
-    protected ThreadInterface $promiseThread;
+    protected ThreadInterface $thread;
 
-    protected PromiseResult $promiseResult;
+    protected PromiseResult $result;
     protected string $promiseId;
 
-    public function __construct(Closure $promise)
+    public function __construct(Closure $executor)
     {
         SharedMemory::getInstance();
         $this->promiseId = "p_" . bin2hex(random_bytes(16));
 
-        $fn = function () use ($promise) {
+        $fn = function () use ($executor) {
             $resolve = function ($value = null) {
                 SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::fulfilled));
             };
@@ -29,14 +29,14 @@ class Promise implements PromiseInterface
             };
 
             try {
-                $promise($resolve, $reject);
+                $executor($resolve, $reject);
             } catch (\Exception $ex) {
                 $reject($ex);
             }
         };
 
-        $this->promiseThread = Thread::create($fn);
-        $this->promiseThread->execute();
+        $this->thread = Thread::create($fn);
+        $this->thread->start();
     }
 
     public function getPromiseId(): string
@@ -49,48 +49,74 @@ class Promise implements PromiseInterface
         return new Promise($promise);
     }
 
-    public function getPromiseResult(): ?PromiseResult
+    public static function resolve($value): PromiseInterface
     {
-        if (!empty($this->promiseResult)) {
-            return $this->promiseResult;
+        return new Promise(function ($resolve) use ($value) {
+            $resolve($value);
+        });
+    }
+
+    public static function reject($value): PromiseInterface
+    {
+        return new Promise(function ($resolve, $reject) use ($value) {
+            $reject($value);
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getResult(): ?PromiseResult
+    {
+        if (!empty($this->result)) {
+            return $this->result;
         }
 
         $result = SharedMemory::getInstance()->get($this->promiseId);
         if (!empty($result)) {
-            $this->promiseResult = $result;
+            $this->result = $result;
 //            SharedMemory::getInstance()->delete($this->promiseId);
         }
 
-        if (!isset($this->promiseResult)) {
+        if (!isset($this->result)) {
             return null;
         }
 
-        return $this->promiseResult;
+        return $this->result;
     }
 
-    public function getPromiseStatus(): PromiseStatus
+    /**
+     * @inheritDoc
+     */
+    public function getStatus(): PromiseStatus
     {
-        if ($this->promiseThread->getStatus() === ThreadStatus::running) {
+        if ($this->thread->getStatus() === ThreadStatus::running) {
             return PromiseStatus::pending;
         }
 
-        return $this->getPromiseResult()?->getStatus() ?? PromiseStatus::pending;
+        return $this->getResult()?->getStatus() ?? PromiseStatus::pending;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function isFulfilled(): bool
     {
-        return $this->getPromiseStatus() === PromiseStatus::fulfilled;
+        return $this->getStatus() === PromiseStatus::fulfilled;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function then(Closure $onFulfilled, Closure $onRejected = null): PromiseInterface
     {
         $promise = $this;
         $then = function ($resolve, $reject) use ($onFulfilled, $onRejected, $promise) {
-            $status = $promise->getPromiseStatus();
+            $status = $promise->getStatus();
             while ($status === PromiseStatus::pending) {
-                $status = $promise->getPromiseStatus();
+                $status = $promise->getStatus();
             }
-            $args = $promise->getPromiseResult()->getResult();
+            $args = $promise->getResult()->getResult();
             if ($status === PromiseStatus::fulfilled) {
                 $resolve($onFulfilled($args));
             } else if ($status === PromiseStatus::rejected) {
@@ -100,17 +126,16 @@ class Promise implements PromiseInterface
             }
         };
 
-//        while ($this->getPromiseStatus() === PromiseStatus::pending) {
-//            $this->promiseThread->waitFinish();
-//        }
-
         return new Promise($then);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function await(): mixed
     {
-        $this->promiseThread->waitFinish();
-        $x = $this->getPromiseResult();
+        $this->thread->join();
+        $x = $this->getResult();
         if (is_null($x)) {
             echo $this->getPromiseId() . "\n";
         }
@@ -123,12 +148,12 @@ class Promise implements PromiseInterface
             $results = [];
             while (count($promises) > 0) {
                 foreach ($promises as $key => $promise) {
-                    if ($promise->getPromiseStatus() === PromiseStatus::rejected) {
-                        $reject($promise->getPromiseResult()->getResult());
+                    if ($promise->getStatus() === PromiseStatus::rejected) {
+                        $reject($promise->getResult()->getResult());
                         return;
                     }
-                    if ($promise->getPromiseStatus() === PromiseStatus::fulfilled) {
-                        $results[] = $promise->getPromiseResult()->getResult();
+                    if ($promise->getStatus() === PromiseStatus::fulfilled) {
+                        $results[] = $promise->getResult()->getResult();
                         unset($promises[$key]);
                     }
                 }
@@ -142,12 +167,12 @@ class Promise implements PromiseInterface
         return new Promise(function ($resolve, $reject) use ($promises) {
             while (count($promises) > 0) {
                 foreach ($promises as $key => $promise) {
-                    if ($promise->getPromiseStatus() === PromiseStatus::rejected) {
-                        $reject($promise->getPromiseResult()->getResult());
+                    if ($promise->getStatus() === PromiseStatus::rejected) {
+                        $reject($promise->getResult()->getResult());
                         return;
                     }
-                    if ($promise->getPromiseStatus() === PromiseStatus::fulfilled) {
-                        $resolve($promise->getPromiseResult()->getResult());
+                    if ($promise->getStatus() === PromiseStatus::fulfilled) {
+                        $resolve($promise->getResult()->getResult());
                         return;
                     }
                 }

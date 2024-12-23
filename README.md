@@ -74,9 +74,13 @@ in the return because it can exhaust the memory.
 
 ### Promises
 
-Our implementation is a very limited version of Promises, and it has only the `.then()` method without chainning.
+This implementation is a limited version of Promises. The Current implemented methods:
 
-Also, the return of the promise uses the shared memory, and it has the same limitation of the Thread return.
+- `$->then` - Execute a callback when the promise is resolved
+- `Promise::resolve` - Resolve a promise
+- `Promise::reject` - Reject a promise
+- `Promise::all` - Wait for all promises to be resolved
+- `Promise::race` - Wait for the first promise to be resolved
 
 ## Install
 

@@ -22,7 +22,7 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $x->await());
 
         // Test if the promise is fulfilled
-        $this->assertEquals(PromiseStatus::fulfilled, $x->getPromiseStatus());
+        $this->assertEquals(PromiseStatus::fulfilled, $x->getStatus());
 
         // Test then
         $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 2)->await());
@@ -51,7 +51,7 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $x->await());
 
         // Test if the promise is rejected
-        $this->assertEquals(PromiseStatus::rejected, $x->getPromiseStatus());
+        $this->assertEquals(PromiseStatus::rejected, $x->getStatus());
 
         // Test then
         $this->assertEquals(6, $x->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
@@ -170,5 +170,29 @@ class PromiseTest extends TestCase
         )->await();
 
         $this->assertEquals('Error Message 3', $result->getMessage());
+    }
+
+    public function testResolve()
+    {
+        $promise = Promise::resolve(1);
+        $this->assertEquals(1, $promise->await());
+    }
+
+    public function testResolveThen()
+    {
+        $promise = Promise::resolve(1);
+        $this->assertEquals(3, $promise->then(fn($resolve) => $resolve + 2)->await());
+    }
+
+    public function testReject()
+    {
+        $promise = Promise::reject(1);
+        $this->assertEquals(1, $promise->await());
+    }
+
+    public function testRejectThen()
+    {
+        $promise = Promise::reject(1);
+        $this->assertEquals(6, $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
     }
 }

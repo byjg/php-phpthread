@@ -13,7 +13,7 @@ interface ThreadInterface
      *
      * @throws RuntimeException
      */
-    public function execute(): void;
+    public function start(): void;
 
     /**
      * Get the thread result
@@ -23,19 +23,19 @@ interface ThreadInterface
     public function getResult(): mixed;
 
     /**
-     * Kill a thread
+     * Stop or terminate the thread.
      *
-     * @param int $signal
-     * @param bool $wait
+     * @param int $signal Signal to send for stopping the thread. Default is SIGKILL.
+     * @param bool $wait Whether to wait for the thread to terminate. Default is false.
      */
-    public function stop(int $signal = SIGKILL, bool $wait = false);
+    public function terminate(int $signal = SIGKILL, bool $wait = false);
 
     /**
-     * Checkif the thread is not Terminated
+     * Check if the thread is still running.
      *
      * @return bool
      */
-    public function isAlive(): bool;
+    public function isRunning(): bool;
 
     /**
      * Set the thread Closure method
@@ -49,7 +49,7 @@ interface ThreadInterface
      *
      * @return void
      */
-    public function waitFinish(): void;
+    public function join(): void;
 
     /**
      * Return the thread class name

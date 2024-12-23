@@ -17,19 +17,19 @@ class ThreadPoolTest extends TestCase
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $th1 = $pool->queueWorker($this->getClosure(), 3);
-        $th2 = $pool->queueWorker($this->getClosure(), 2);
-        $this->assertEquals(0, $pool->activeWorkers());
+        $th1 = $pool->addWorker($this->getClosure(), 3);
+        $th2 = $pool->addWorker($this->getClosure(), 2);
+        $this->assertEquals(0, $pool->countActiveWorkers());
 
-        $pool->startPool();
-        $this->assertEquals(2, $pool->activeWorkers());
+        $pool->startAll();
+        $this->assertEquals(2, $pool->countActiveWorkers());
 
-        $th3 = $pool->queueWorker($this->getClosure(), 1);
-        $this->assertEquals(3, $pool->activeWorkers());
+        $th3 = $pool->addWorker($this->getClosure(), 1);
+        $this->assertEquals(3, $pool->countActiveWorkers());
 
-        $pool->waitWorkers();
+        $pool->waitForCompletion();
 
-        $this->assertEquals(0, $pool->activeWorkers());
+        $this->assertEquals(0, $pool->countActiveWorkers());
 
         $this->assertEquals(9, $pool->getThreadResult($th1));
         $this->assertEquals(6, $pool->getThreadResult($th2));
@@ -41,9 +41,9 @@ class ThreadPoolTest extends TestCase
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $th1 = $pool->queueWorker($this->getClosure(), 3);
-        $th2 = $pool->queueWorker($this->getClosure(), 2);
-        $this->assertEquals(0, $pool->activeWorkers());
+        $th1 = $pool->addWorker($this->getClosure(), 3);
+        $th2 = $pool->addWorker($this->getClosure(), 2);
+        $this->assertEquals(0, $pool->countActiveWorkers());
 
         $this->assertNull($pool->getThreadResult($th1));
         $this->assertNull($pool->getThreadResult($th2));
@@ -53,14 +53,14 @@ class ThreadPoolTest extends TestCase
     {
         $pool = new \ByJG\PHPThread\ThreadPool();
 
-        $th1 = $pool->queueWorker($this->getClosure(), 3);
-        $th2 = $pool->queueWorker($this->getClosure(), 2);
-        $this->assertEquals(0, $pool->activeWorkers());
+        $th1 = $pool->addWorker($this->getClosure(), 3);
+        $th2 = $pool->addWorker($this->getClosure(), 2);
+        $this->assertEquals(0, $pool->countActiveWorkers());
 
-        $pool->startPool();
-        $this->assertEquals(2, $pool->activeWorkers());
+        $pool->startAll();
+        $this->assertEquals(2, $pool->countActiveWorkers());
 
-        $pool->stopPool();
-        $this->assertEquals(0, $pool->activeWorkers());
+        $pool->stopAll();
+        $this->assertEquals(0, $pool->countActiveWorkers());
     }
 }
