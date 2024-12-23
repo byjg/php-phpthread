@@ -112,6 +112,50 @@ class PromiseTest extends TestCase
         $this->assertEquals("Reason: 2", $result);
     }
 
+    public function testAllFulfilledCatch()
+    {
+        $promise1 = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $resolve(2);
+        });
+
+        $promise3 = new Promise(function ($resolve, $reject) {
+            $resolve(3);
+        });
+
+        $result = Promise::all($promise1, $promise2, $promise3)
+            ->catch(
+                fn($reason) => "Reason: $reason"
+            )->await();
+
+        $this->assertEquals([1, 2, 3], $result);
+    }
+
+    public function testAllRejectCatch()
+    {
+        $promise1 = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $reject(2);
+        });
+
+        $promise3 = new Promise(function ($resolve, $reject) {
+            $resolve(3);
+        });
+
+        $result = Promise::all($promise1, $promise2, $promise3)
+            ->catch(
+                fn($reason) => "Reason: $reason"
+            )->await();
+
+        $this->assertEquals("Reason: 2", $result);
+    }
+
     public function testRaceFulfilled()
     {
         $promise1 = new Promise(function ($resolve, $reject) {
@@ -194,5 +238,33 @@ class PromiseTest extends TestCase
     {
         $promise = Promise::reject(1);
         $this->assertEquals(6, $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
+    }
+
+    public function testCatch()
+    {
+        $promise = new Promise(function ($resolve, $reject) {
+            throw new \Exception('Error Message 2');
+        });
+
+        $result = $promise
+            ->then(fn($resolve) => $resolve)
+            ->catch(fn($reject) => $reject->getMessage())
+            ->await();
+
+        $this->assertEquals('Error Message 2', $result);
+    }
+
+    public function testFulfilledCatch()
+    {
+        $promise = new Promise(function ($resolve, $reject) {
+            $resolve(1);
+        });
+
+        $result = $promise
+            ->then(fn($resolve) => $resolve)
+            ->catch(fn($reject) => $reject->getMessage())
+            ->await();
+
+        $this->assertEquals(1, $result);
     }
 }

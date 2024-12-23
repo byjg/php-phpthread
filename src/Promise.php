@@ -122,11 +122,21 @@ class Promise implements PromiseInterface
             } else if ($status === PromiseStatus::rejected) {
                 if ($onRejected) {
                     $reject($onRejected($args));
+                } else {
+                    $reject($args);
                 }
             }
         };
 
         return new Promise($then);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function catch(Closure $onRejected): PromiseInterface
+    {
+        return $this->then(fn($resolve) => $resolve, $onRejected);
     }
 
     /**

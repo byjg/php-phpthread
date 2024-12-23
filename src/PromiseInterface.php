@@ -16,6 +16,14 @@ interface PromiseInterface
     public function then(Closure $onFulfilled, Closure $onRejected = null): PromiseInterface;
 
     /**
+     * Add a rejection handler to the promise.
+     *
+     * @param Closure $onRejected The callback to execute if the promise is rejected.
+     * @return PromiseInterface A new promise for chaining further actions.
+     */
+    public function catch(Closure $onRejected): PromiseInterface;
+
+    /**
      * Retrieve the current status of the promise.
      *
      * @return PromiseStatus The status of the promise (e.g., PENDING, FULFILLED, REJECTED).
