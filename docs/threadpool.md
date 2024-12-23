@@ -8,15 +8,15 @@ after the pool is started.
 $threadPool = new \ByJG\PHPThread\ThreadPool();
 
 // Create and queue the threads with call parameters
-$threadPool->queueWorker( $threadClousure, [ 1 ]);
-$threadPool->queueWorker( $threadClousure, [ 2 ]);
+$threadPool->queueWorker( $threadClousure, 1);
+$threadPool->queueWorker( $threadClousure, 2);
 
 // Starts all the threads in the queue
 $threadPool->startPool();
 
 // Add more workers after the pool is started:
-$threadPool->queueWorker( $threadClousure, [ 3 ]);
-$threadPool->queueWorker( $threadClousure, [ 4 ]);
+$threadPool->queueWorker( $threadClousure, 3);
+$threadPool->queueWorker( $threadClousure, 4);
 
 // Wait until there is no more active workers
 $threadPool->waitWorkers();

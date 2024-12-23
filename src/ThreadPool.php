@@ -71,9 +71,8 @@ class ThreadPool
     protected function startWorker(int $threadItemKey): void
     {
         $thread = Thread::create($this->threadList[$threadItemKey]->closure);
-
         $this->threadInstance[$threadItemKey] = $thread;
-        call_user_func_array([$thread, 'execute'], ...$this->threadList[$threadItemKey]->params);
+        $thread->execute(...$this->threadList[$threadItemKey]->params);
     }
 
     /**
