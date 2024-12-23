@@ -2,9 +2,13 @@
 
 namespace ByJG\PHPThread;
 
+use ByJG\Cache\Exception\InvalidArgumentException;
 use ByJG\PHPThread\Handler\ForkHandler;
 use ByJG\PHPThread\Handler\ParallelHandler;
 use ByJG\PHPThread\Handler\ThreadInterface;
+use Closure;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
 
 /**
@@ -18,9 +22,11 @@ use RuntimeException;
 class Thread
 {
     /**
+     * @param Closure $closure
+     * @param Closure|null $onFinish
      * @return ThreadInterface
      */
-    public static function create(\Closure $closure, ?\Closure $onFinish = null): ThreadInterface
+    public static function create(Closure $closure, ?Closure $onFinish = null): ThreadInterface
     {
         if (class_exists('\parallel\Runtime', true)) {
             $instance = new ParallelHandler();
@@ -36,6 +42,16 @@ class Thread
         $instance->setClosure($closure);
 
         return $instance;
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     */
+    public static function gc(): void
+    {
+        SharedMemory::getInstance()->clear();
     }
 
 }

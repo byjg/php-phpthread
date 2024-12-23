@@ -35,7 +35,7 @@ class ForkHandler implements ThreadInterface
      * constructor method
      *
      */
-    public function __construct(?\Closure $onFinish = null)
+    public function __construct(?Closure $onFinish = null)
     {
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
@@ -101,10 +101,6 @@ class ForkHandler implements ThreadInterface
      * Save the thread result in a shared memory block
      *
      * @param mixed $object Need to be serializable
-     * @throws InvalidArgumentException
-     * @throws StorageErrorException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     protected function saveResult(mixed $object): void
     {
@@ -172,11 +168,10 @@ class ForkHandler implements ThreadInterface
      *
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal): void
     {
-        switch ($signal) {
-            case SIGTERM:
-                exit(0);
+        if ($signal == SIGTERM) {
+            exit(0);
         }
     }
 

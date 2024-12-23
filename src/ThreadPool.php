@@ -4,6 +4,7 @@ namespace ByJG\PHPThread;
 
 use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
+use stdClass;
 
 /**
  * Manage a pool of threads.
@@ -39,7 +40,7 @@ class ThreadPool
     {
         $thid = $this->currentId++;
 
-        $data = new \stdClass;
+        $data = new stdClass;
         $data->closure = $closure;
         $data->params = $params;
 

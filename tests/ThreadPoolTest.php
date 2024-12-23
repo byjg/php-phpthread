@@ -1,10 +1,16 @@
 <?php
 
-
+use ByJG\PHPThread\Thread;
+use ByJG\PHPThread\ThreadPool;
 use PHPUnit\Framework\TestCase;
 
 class ThreadPoolTest extends TestCase
 {
+    public function tearDown(): void
+    {
+        Thread::gc();
+    }
+
     protected function getClosure()
     {
         return function ($arg) {
@@ -15,7 +21,7 @@ class ThreadPoolTest extends TestCase
 
     public function testThread()
     {
-        $pool = new \ByJG\PHPThread\ThreadPool();
+        $pool = new ThreadPool();
 
         $th1 = $pool->addWorker($this->getClosure(), 3);
         $th2 = $pool->addWorker($this->getClosure(), 2);
@@ -39,7 +45,7 @@ class ThreadPoolTest extends TestCase
 
     public function testThreadResult()
     {
-        $pool = new \ByJG\PHPThread\ThreadPool();
+        $pool = new ThreadPool();
 
         $th1 = $pool->addWorker($this->getClosure(), 3);
         $th2 = $pool->addWorker($this->getClosure(), 2);
@@ -51,7 +57,7 @@ class ThreadPoolTest extends TestCase
 
     public function testThreadStart()
     {
-        $pool = new \ByJG\PHPThread\ThreadPool();
+        $pool = new ThreadPool();
 
         $th1 = $pool->addWorker($this->getClosure(), 3);
         $th2 = $pool->addWorker($this->getClosure(), 2);

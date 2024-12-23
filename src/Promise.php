@@ -2,8 +2,12 @@
 
 namespace ByJG\PHPThread;
 
+use ByJG\Cache\Exception\InvalidArgumentException;
 use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
+use Exception;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 class Promise implements PromiseInterface
 {
@@ -30,7 +34,7 @@ class Promise implements PromiseInterface
 
             try {
                 $executor($resolve, $reject);
-            } catch (\Exception $ex) {
+            } catch (Exception $ex) {
                 $reject($ex);
             }
         };
@@ -65,6 +69,10 @@ class Promise implements PromiseInterface
 
     /**
      * @inheritDoc
+     * @return PromiseResult|null
+     * @throws InvalidArgumentException
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
      */
     public function getResult(): ?PromiseResult
     {
@@ -75,7 +83,7 @@ class Promise implements PromiseInterface
         $result = SharedMemory::getInstance()->get($this->promiseId);
         if (!empty($result)) {
             $this->result = $result;
-//            SharedMemory::getInstance()->delete($this->promiseId);
+            //SharedMemory::getInstance()->delete($this->promiseId);
         }
 
         if (!isset($this->result)) {
@@ -87,6 +95,10 @@ class Promise implements PromiseInterface
 
     /**
      * @inheritDoc
+     * @return PromiseStatus
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      */
     public function getStatus(): PromiseStatus
     {
@@ -99,6 +111,10 @@ class Promise implements PromiseInterface
 
     /**
      * @inheritDoc
+     * @return bool
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      */
     public function isFulfilled(): bool
     {
@@ -110,13 +126,12 @@ class Promise implements PromiseInterface
      */
     public function then(Closure $onFulfilled, Closure $onRejected = null): PromiseInterface
     {
-        $promise = $this;
-        $then = function ($resolve, $reject) use ($onFulfilled, $onRejected, $promise) {
-            $status = $promise->getStatus();
+        $then = function ($resolve, $reject) use ($onFulfilled, $onRejected) {
+            $status = $this->getStatus();
             while ($status === PromiseStatus::pending) {
-                $status = $promise->getStatus();
+                $status = $this->getStatus();
             }
-            $args = $promise->getResult()->getResult();
+            $args = $this->getResult()->getResult();
             if ($status === PromiseStatus::fulfilled) {
                 $resolve($onFulfilled($args));
             } else if ($status === PromiseStatus::rejected) {
@@ -152,6 +167,10 @@ class Promise implements PromiseInterface
 
     /**
      * @inheritDoc
+     * @return mixed
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      */
     public function await(): mixed
     {
@@ -187,7 +206,7 @@ class Promise implements PromiseInterface
     {
         return new Promise(function ($resolve, $reject) use ($promises) {
             while (count($promises) > 0) {
-                foreach ($promises as $key => $promise) {
+                foreach ($promises as $promise) {
                     if ($promise->getStatus() === PromiseStatus::rejected) {
                         $reject($promise->getResult()->getResult());
                         return;
@@ -201,7 +220,12 @@ class Promise implements PromiseInterface
         });
     }
 
-    public static function gc()
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     * @throws InvalidArgumentException
+     */
+    public static function gc(): void
     {
         SharedMemory::getInstance()->clear();
     }

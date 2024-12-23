@@ -7,6 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 class ThreadTest extends TestCase
 {
+    public function tearDown(): void
+    {
+        Thread::gc();
+    }
+
     public function testThread()
     {
         $closure = function ($arg) {
