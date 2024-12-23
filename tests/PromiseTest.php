@@ -7,30 +7,26 @@ use PHPUnit\Framework\TestCase;
 
 class PromiseTest extends TestCase
 {
+    public function tearDown(): void
+    {
+        Promise::gc();
+    }
+
     public function testPromiseFulfilled()
     {
-        echo "A\n";
         $x = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
 
-        echo "B\n";
-
         // Test if the promise is pending
         $this->assertEquals(1, $x->await());
-
-        echo "C\n";
 
         // Test if the promise is fulfilled
         $this->assertEquals(PromiseStatus::fulfilled, $x->getPromiseStatus());
 
-        echo "D\n";
-
         // Test then
         $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 2)->await());
         $this->assertEquals(11, $x->then(fn($resolve) => $resolve + 10)->await());
-
-        echo "E\n";
     }
 
     public function testPromiseFulfilledSequence()

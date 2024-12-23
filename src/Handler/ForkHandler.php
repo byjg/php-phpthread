@@ -29,16 +29,19 @@ class ForkHandler implements ThreadInterface
 
     private mixed $threadResult = null;
 
+    private ?Closure $onFinish = null;
 
     /**
      * constructor method
      *
      */
-    public function __construct()
+    public function __construct(?\Closure $onFinish = null)
     {
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
         }
+
+        $this->onFinish = $onFinish;
     }
 
     /**
@@ -82,9 +85,13 @@ class ForkHandler implements ThreadInterface
                 if (!is_null($return)) {
                     $this->saveResult($return);
                 }
-            // Executed only in PHP 7, will not match in PHP 5.x
+                // Executed only in PHP 7, will not match in PHP 5.x
             } catch (Throwable $t) {
                 $this->saveResult($t);
+            }
+
+            if (!empty($this->onFinish)) {
+                call_user_func($this->onFinish);
             }
 
             exit(0);
@@ -122,21 +129,17 @@ class ForkHandler implements ThreadInterface
             return $this->threadResult;
         }
 
-        $this->threadResult = SharedMemory::getInstance()->get($this->threadKey);
+        $key = $this->threadKey;
+        $this->threadKey = null;
+
+        $this->threadResult = SharedMemory::getInstance()->get($key);
+        SharedMemory::getInstance()->delete($key);
 
         if ($this->threadResult instanceof Throwable) {
             throw $this->threadResult;
         }
 
         return $this->threadResult;
-    }
-
-    public function __destruct()
-    {
-        if (isset($this->pid) && $this->pid && !empty($this->threadKey)) {
-            echo "Destructing Thread {$this->threadKey} \n";
-            SharedMemory::getInstance()->delete($this->threadKey);
-        }
     }
 
     /**
@@ -181,10 +184,14 @@ class ForkHandler implements ThreadInterface
     public function waitFinish(): void
     {
         //pcntl_wait($status);
-        if ($this->isAlive()) {
-            usleep(50000);
-            $this->waitFinish();
+        while ($this->isAlive()) {
+            usleep(100);
         }
+    }
+
+    public function getPid(): int
+    {
+        return $this->pid;
     }
 
     public function getClassName(): string

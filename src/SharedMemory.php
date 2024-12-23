@@ -2,29 +2,17 @@
 
 namespace ByJG\PHPThread;
 
-use ByJG\Cache\Psr16\ShmopCacheEngine;
+use ByJG\Cache\Psr16\TmpfsCacheEngine;
 
 class SharedMemory
 {
-    protected static ShmopCacheEngine $shmopCacheEngine;
+    protected static TmpfsCacheEngine $memory;
 
-    protected function __construct($maxSharedMemorySize, $defaultPermission)
+    public static function getInstance(): TmpfsCacheEngine
     {
-
+        if (!isset(self::$memory)) {
+            self::$memory = new TmpfsCacheEngine(prefix: bin2hex(random_bytes(8)));
+        }
+        return self::$memory;
     }
-
-    public static function getInstance(): ShmopCacheEngine
-    {
-        self::$shmopCacheEngine = new ShmopCacheEngine(
-            [
-                'max-size' => 0x100000,
-                'default-permission' => '0700'
-            ]
-        );
-
-        return self::$shmopCacheEngine;
-    }
-
-
-
 }

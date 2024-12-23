@@ -9,26 +9,23 @@ class Promise implements PromiseInterface
 {
     protected Closure $promise;
 
-    protected PromiseStatus $promiseStatus;
-
     protected ThreadInterface $promiseThread;
-    protected Promise $parent;
+
+    protected PromiseResult $promiseResult;
     protected string $promiseId;
 
     public function __construct(Closure $promise)
     {
-        $this->promise = $promise;
-        $this->promiseStatus = PromiseStatus::pending;
-
+        SharedMemory::getInstance();
         $this->promiseId = "p_" . bin2hex(random_bytes(16));
 
         $fn = function () use ($promise) {
             $resolve = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::fulfilled), 60);
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::fulfilled));
             };
 
             $reject = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::rejected), 60);
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::rejected));
             };
 
             try {
@@ -38,17 +35,13 @@ class Promise implements PromiseInterface
             }
         };
 
-        echo "create: {$this->promiseId} \n";
         $this->promiseThread = Thread::create($fn);
         $this->promiseThread->execute();
-
     }
 
-    public function __destruct()
+    public function getPromiseId(): string
     {
-        $result = $this->promiseThread->isAlive() ? "true" : "false";
-        echo "Destructing Promise {$this->promiseId} - {$result} \n";
-        //SharedMemory::getInstance()->delete($this->promiseId);
+        return $this->promiseId;
     }
 
     public static function create(Closure $promise): PromiseInterface
@@ -58,7 +51,21 @@ class Promise implements PromiseInterface
 
     public function getPromiseResult(): ?PromiseResult
     {
-        return SharedMemory::getInstance()->get($this->promiseId);
+        if (!empty($this->promiseResult)) {
+            return $this->promiseResult;
+        }
+
+        $result = SharedMemory::getInstance()->get($this->promiseId);
+        if (!empty($result)) {
+            $this->promiseResult = $result;
+//            SharedMemory::getInstance()->delete($this->promiseId);
+        }
+
+        if (!isset($this->promiseResult)) {
+            return null;
+        }
+
+        return $this->promiseResult;
     }
 
     public function getPromiseStatus(): PromiseStatus
@@ -93,14 +100,21 @@ class Promise implements PromiseInterface
             }
         };
 
+//        while ($this->getPromiseStatus() === PromiseStatus::pending) {
+//            $this->promiseThread->waitFinish();
+//        }
+
         return new Promise($then);
     }
 
     public function await(): mixed
     {
         $this->promiseThread->waitFinish();
-        $this->getPromiseStatus();
-        return $this->getPromiseResult()->getResult();
+        $x = $this->getPromiseResult();
+        if (is_null($x)) {
+            echo $this->getPromiseId() . "\n";
+        }
+        return $x->getResult();
     }
 
     public static function all(PromiseInterface ...$promises): PromiseInterface
@@ -139,5 +153,10 @@ class Promise implements PromiseInterface
                 }
             }
         });
+    }
+
+    public static function gc()
+    {
+        SharedMemory::getInstance()->clear();
     }
 }
