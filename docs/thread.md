@@ -8,7 +8,7 @@ require_once('vendor/autoload.php');
 // Method to be executed in a thread
 $threadClousure = function ($t)
     {
-        echo "Starint thread #$t" . PHP_EOL;;
+        echo "Starting thread #$t" . PHP_EOL;;
         sleep(1 * rand(1, 5));
         for ($i = 0; $i < 10; $i++)
         {

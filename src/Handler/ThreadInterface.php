@@ -4,13 +4,14 @@ namespace ByJG\PHPThread\Handler;
 
 use ByJG\PHPThread\ThreadStatus;
 use Closure;
+use RuntimeException;
 
 interface ThreadInterface
 {
     /**
      * Start the thread
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public function execute(): void;
 
