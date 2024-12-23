@@ -1,6 +1,7 @@
 ## Thread Pool Usage
 
-You can create a pool of threads. This is particulary interesting if you want to queue Workers after the pool is started.
+You can create a pool of threads. This is particulary interesting if you want to queue Workers
+after the pool is started.
 
 ```php
 // Create a instance of the ThreadPool
@@ -27,3 +28,5 @@ foreach ($threadPool->getThreads() as $thid) {
 
 echo "\n\nEnded!\n";
 ```
+
+While the pool is running, you can add more workers to the pool. 

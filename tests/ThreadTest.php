@@ -10,7 +10,7 @@ class ThreadTest extends TestCase
     public function testThread()
     {
         $closure = function ($arg) {
-            sleep($arg*3);
+            usleep(100 * $arg);
             return $arg * 3;
         };
 

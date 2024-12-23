@@ -35,12 +35,8 @@ class ThreadPool
      * @param array $params The thread parameters
      * @return int
      */
-    public function queueWorker(Closure $closure, array $params = []): int
+    public function queueWorker(Closure $closure, ...$params): int
     {
-        if (!is_array($params)) {
-            throw new \InvalidArgumentException('The params needs to be an array');
-        }
-
         $thid = $this->currentId++;
 
         $data = new \stdClass;
@@ -76,8 +72,8 @@ class ThreadPool
     {
         $thread = Thread::create($this->threadList[$threadItemKey]->closure);
 
-        call_user_func_array([$thread, 'execute'], $this->threadList[$threadItemKey]->params);
         $this->threadInstance[$threadItemKey] = $thread;
+        call_user_func_array([$thread, 'execute'], ...$this->threadList[$threadItemKey]->params);
     }
 
     /**

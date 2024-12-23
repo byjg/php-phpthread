@@ -63,7 +63,7 @@ class ForkHandler implements ThreadInterface
      * @throws NotFoundExceptionInterface
      * @throws StorageErrorException
      */
-    public function execute(): void
+    public function execute(...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
@@ -77,10 +77,9 @@ class ForkHandler implements ThreadInterface
         } else {
             // Child.
             pcntl_signal(SIGTERM, array($this, 'signalHandler'));
-            $args = func_get_args();
 
             try {
-                $return = call_user_func_array($this->closure, (array)$args);
+                $return = call_user_func($this->closure, ...$args);
 
                 if (!is_null($return)) {
                     $this->saveResult($return);
