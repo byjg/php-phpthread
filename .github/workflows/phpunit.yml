@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: composer install
       - run: php tests/get_class_name.php
+      - run: ./vendor/bin/psalm
       - run: ./vendor/bin/phpunit
 
   Build-zts:

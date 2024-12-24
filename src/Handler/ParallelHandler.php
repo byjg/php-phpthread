@@ -5,13 +5,14 @@ namespace ByJG\PHPThread\Handler;
 use ByJG\PHPThread\ThreadStatus;
 use parallel\Runtime;
 
+/** @psalm-suppress UndefinedClass */
 class ParallelHandler implements ThreadInterface
 {
     protected \Closure $closure;
     protected Runtime $runtime;
     protected $future = null;
 
-    public function start(): void
+    public function start(mixed ...$args): void
     {
         $fnArgs = func_get_args();
 

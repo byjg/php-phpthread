@@ -15,7 +15,7 @@ class Promise implements PromiseInterface
 
     protected ThreadInterface $thread;
 
-    protected PromiseResult $result;
+    protected ?PromiseResult $result = null;
     protected string $promiseId;
 
     public function __construct(Closure $executor)
@@ -83,10 +83,7 @@ class Promise implements PromiseInterface
         $result = SharedMemory::getInstance()->get($this->promiseId);
         if (!empty($result)) {
             $this->result = $result;
-            //SharedMemory::getInstance()->delete($this->promiseId);
-        }
-
-        if (!isset($this->result)) {
+        } else {
             return null;
         }
 

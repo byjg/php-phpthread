@@ -11,9 +11,10 @@ interface ThreadInterface
     /**
      * Start the thread
      *
+     * @param mixed ...$args
      * @throws RuntimeException
      */
-    public function start(): void;
+    public function start(mixed ...$args): void;
 
     /**
      * Get the thread result

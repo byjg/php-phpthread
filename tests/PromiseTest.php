@@ -7,6 +7,13 @@ use PHPUnit\Framework\TestCase;
 
 class PromiseTest extends TestCase
 {
+    public function setUp(): void
+    {
+        if (extension_loaded('parallel')) {
+            $this->markTestSkipped('Promise is not compatible with parallel extension');
+        }
+    }
+
     public function tearDown(): void
     {
         Promise::gc();

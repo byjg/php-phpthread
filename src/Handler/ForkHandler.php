@@ -7,7 +7,6 @@ use ByJG\Cache\Exception\StorageErrorException;
 use ByJG\PHPThread\SharedMemory;
 use ByJG\PHPThread\ThreadStatus;
 use Closure;
-use Error;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
@@ -63,7 +62,7 @@ class ForkHandler implements ThreadInterface
      * @throws NotFoundExceptionInterface
      * @throws StorageErrorException
      */
-    public function start(...$args): void
+    public function start(mixed ...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
 
@@ -111,8 +110,10 @@ class ForkHandler implements ThreadInterface
      * Get the thread result from the shared memory block and erase it
      *
      * @return mixed
-     * @throws Error
-     * @throws object
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
+     * @throws Throwable
      */
     public function getResult(): mixed
     {
@@ -168,7 +169,7 @@ class ForkHandler implements ThreadInterface
      *
      * @param int $signal
      */
-    private function signalHandler(int $signal): void
+    public function signalHandler(int $signal): void
     {
         if ($signal == SIGTERM) {
             exit(0);
