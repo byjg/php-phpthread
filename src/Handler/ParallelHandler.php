@@ -14,10 +14,8 @@ class ParallelHandler implements ThreadInterface
 
     public function start(mixed ...$args): void
     {
-        $fnArgs = func_get_args();
-
         $this->runtime = new Runtime();
-        $this->future = $this->runtime->run($this->closure, $fnArgs);
+        $this->future = $this->runtime->run($this->closure, $args);
     }
 
     public function getResult(): mixed
@@ -43,7 +41,7 @@ class ParallelHandler implements ThreadInterface
     public function join(): void
     {
         while (!$this->future->cancelled() && !$this->future->done()) {
-            usleep(50000);
+            usleep(100);
         }
     }
 

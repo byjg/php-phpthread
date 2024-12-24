@@ -14,7 +14,7 @@ class ThreadPoolTest extends TestCase
     protected function getClosure()
     {
         return function ($arg) {
-            usleep(100 * $arg);
+            sleep(1 * $arg);
             return $arg * 3;
         };
     }
