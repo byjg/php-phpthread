@@ -23,21 +23,21 @@ try {
     // Create the threads
     for ($i = 0; $i < 10; $i++) {
         // Queue a worker pointing to "Foo" function and pass the required parameters
-        $threadPool->queueWorker($threadClousure, [$i]);
+        $threadPool->addWorker($threadClousure, [$i]);
     }
 
     // Starts all the threads in the queue
-    $threadPool->startPool();
+    $threadPool->startAll();
 
     // Wait until there is no more active workers
     // You can use $threadPool->waitWorkers() instead the loop below
-    while ($threadPool->activeWorkers() > 0) {
-        echo "Active Workers : " . $threadPool->activeWorkers() . "\n";
+    while ($threadPool->countActiveWorkers() > 0) {
+        echo "Active Workers : " . $threadPool->countActiveWorkers() . "\n";
         sleep(1);
     }
 
     // Get the return value from the thread.
-    foreach ($threadPool->getThreads() as $thid) {
+    foreach ($threadPool->listThreads() as $thid) {
         echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
     }
 

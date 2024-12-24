@@ -2,49 +2,64 @@
 
 namespace ByJG\PHPThread\Handler;
 
+use ByJG\PHPThread\ThreadStatus;
+use parallel\Runtime;
+
+/** @psalm-suppress UndefinedClass */
 class ParallelHandler implements ThreadInterface
 {
-    protected $closure;
-    protected $runtime;
-    protected $future;
+    protected \Closure $closure;
+    protected Runtime $runtime;
+    protected $future = null;
 
-    public function execute()
+    public function start(mixed ...$args): void
     {
-        $fnArgs = func_get_args();
-
-        $this->runtime = new \parallel\Runtime();
-        $this->future = $this->runtime->run($this->closure, $fnArgs);
+        $this->runtime = new Runtime();
+        $this->future = $this->runtime->run($this->closure, $args);
     }
 
-    public function getResult()
+    public function getResult(): mixed
     {
         return $this->future->value();
     }
 
-    public function stop($signal = SIGKILL, $wait = false)
+    public function terminate(int $signal = SIGKILL, bool $wait = false)
     {
         $this->runtime->kill();
     }
 
-    public function isAlive()
+    public function isRunning(): bool
     {
         return !$this->future->cancelled() && !$this->future->done();
     }
 
-    public function setClosure(\Closure $closure)
+    public function setClosure(\Closure $closure): void
     {
         $this->closure = $closure;
     }
 
-    public function waitFinish()
+    public function join(): void
     {
         while (!$this->future->cancelled() && !$this->future->done()) {
-            sleep(1);
+            usleep(100);
         }
     }
 
-    public function getClassName()
+    public function getClassName(): string
     {
         return ParallelHandler::class;
+    }
+
+    public function getStatus(): ThreadStatus
+    {
+        if (empty($this->future)) {
+            return ThreadStatus::notStarted;
+        } else if ($this->future->cancelled()) {
+            return ThreadStatus::error;
+        } else if ($this->future->done()) {
+            return ThreadStatus::finished;
+        } else {
+            return ThreadStatus::running;
+        }
     }
 }

@@ -2,57 +2,61 @@
 
 namespace ByJG\PHPThread\Handler;
 
+use ByJG\PHPThread\ThreadStatus;
 use Closure;
+use RuntimeException;
 
 interface ThreadInterface
 {
-
     /**
      * Start the thread
      *
-     * @throws \RuntimeException
+     * @param mixed ...$args
+     * @throws RuntimeException
      */
-    public function execute();
+    public function start(mixed ...$args): void;
 
     /**
      * Get the thread result
      *
      * @return mixed
      */
-    public function getResult();
+    public function getResult(): mixed;
 
     /**
-     * Kill a thread
+     * Stop or terminate the thread.
      *
-     * @param int $signal
-     * @param bool $wait
+     * @param int $signal Signal to send for stopping the thread. Default is SIGKILL.
+     * @param bool $wait Whether to wait for the thread to terminate. Default is false.
      */
-    public function stop($signal = SIGKILL, $wait = false);
+    public function terminate(int $signal = SIGKILL, bool $wait = false);
 
     /**
-     * Checkif the thread is not Terminated
+     * Check if the thread is still running.
      *
      * @return bool
      */
-    public function isAlive();
+    public function isRunning(): bool;
 
     /**
      * Set the thread Closure method
      * @param Closure $closure
-     * @return mixed
+     * @return void
      */
-    public function setClosure(Closure $closure);
+    public function setClosure(Closure $closure): void;
 
     /**
      * Wait for the thread finish and join to main thread;
      *
-     * @return mixed
+     * @return void
      */
-    public function waitFinish();
+    public function join(): void;
 
     /**
      * Return the thread class name
      * @return string
      */
-    public function getClassName();
+    public function getClassName(): string;
+
+    public function getStatus(): ThreadStatus;
 }

@@ -1,139 +1,133 @@
-# phpthread
+# ByJG PHPThread: Simplified Threads and Non-Blocking Code in PHP
 
+[![Build Status](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/phpthread/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
-[![Code Coverage](https://scrutinizer-ci.com/g/byjg/phpthread/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/phpthread/?branch=master)
-[![Build Status](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/phpthread/actions/workflows/phpunit.yml)
+[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-phpthread/)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-phpthread.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-phpthread.svg)](https://github.com/byjg/php-phpthread/releases/)
 
-Polyfill Implementation of Threads in PHP. This class supports both FORK process and native Threads using ZTS compilation;
+ByJG PHPThread simplifies working with threads and non-blocking code in PHP,
+bridging the gap for a language that was not inherently designed for threading.
 
-This class detects automatically if PHP was compiled:
+---
 
-- with ZTS (--enable-maintainer-zts or --enable-zts) and the extension pthreads (works on Windows also) 
-- with the Process Controle (--enable-pcntl)
+## Table of Contents
 
-and choose the most suitable handler for processing the threads. The thread interface is the same whatever is the Thread handler.
+1. [Overview](#overview)
+2. [Why Threads in PHP?](#why-threads-in-php)
+3. [How It Works](#how-it-works)
+   - [Default PHP (Non-ZTS)](#default-php-non-zts)
+   - [PHP ZTS (Zend Thread Safety)](#php-zts-zend-thread-safety)
+4. [Features](#features)
+5. [Limitations](#limitations)
+6. [Installation](#installation)
+7. [License](#license)
 
-## Notes
+---
 
-- Most of the fork implementation was based on the post "http://villavu.com/forum/showthread.php?t=73623" by the "superuser"
-- Tales Santos (tsantos84) contributed on the base of the Thread ZTS by creating the code base and solving some specific thread problems. Thanks!!!!  
+## Overview
 
-## Usage
+PHPThread is a polyfill library that abstracts threading functionality for PHP, providing a consistent
+interface regardless of the underlying PHP setup (ZTS or Fork). It empowers developers to implement
+thread-like behavior and asynchronous processing in PHP applications.
 
-Assume for the examples below the class 'Foo' and the method 'bar':
+---
 
-```php
-require_once('vendor/autoload.php');
+## Why Threads in PHP?
 
-// Method to be executed in a thread
-$threadClousure = function ($t)
-    {
-        echo "Starint thread #$t" . PHP_EOL;;
-        sleep(1 * rand(1, 5));
-        for ($i = 0; $i < 10; $i++)
-        {
-            echo "Hello from thread #$t, i=$i" . PHP_EOL;
-            sleep(1);
-        }
-        echo "Ending thread #$t" . PHP_EOL;
-    
-        return $t;
-    };
+PHP is traditionally designed for a **request-response cycle**, where scripts are executed
+only in response to client requests and terminate after sending a response. While efficient for
+web applications, this architecture lacks native threading support for background or concurrent tasks.
+
+With PHPThread, you can overcome these limitations by leveraging:
+
+- **Forking (Default PHP)** for simulating threading.
+- **Zend Thread Safety (ZTS)** for true multi-threading environments.
+
+---
+
+## How It Works
+
+### Default PHP (Non-ZTS)
+
+In standard PHP installations (without ZTS), threading is simulated using the `fork` command.
+This approach creates a new process by cloning the parent process. While not a true thread,
+this method can approximate threading behavior.
+
+**Requirements:**
+
+- [pcntl](https://www.php.net/manual/en/book.pcntl.php): For process control.
+- [shmop](https://www.php.net/manual/en/book.shmop.php): For shared memory.
+
+---
+
+### PHP ZTS (Zend Thread Safety)
+
+With ZTS-enabled PHP, true multi-threading becomes possible. This setup is ideal for production environments where
+robust threading is required. The ZTS version is compiled with the `--enable-zts` flag, but it may not be included in
+all PHP distributions.
+
+**Requirements:**
+
+- [parallel](https://www.php.net/manual/en/book.parallel.php): For multi-threading functionality.
+- [shmop](https://www.php.net/manual/en/book.shmop.php): For memory sharing.
+
+---
+
+## Features
+
+- **Thread Management**: Simplified thread creation and execution ([docs](docs/thread.md)).
+- **Thread Pools**: Efficiently manage and reuse threads for multiple tasks ([docs](docs/threadpool.md)).
+- **Promises (Experimental)**: Asynchronous task management with a promise-like API ([docs](docs/promises.md)).
+
+Supported Promise Methods:
+
+- `then()`: Execute a callback on promise resolution.
+- `catch()`: Execute a callback on promise rejection.
+- `finally()`: Execute a callback after resolution or rejection.
+- `Promise::resolve()`: Resolve a promise.
+- `Promise::reject()`: Reject a promise.
+- `Promise::all()`: Wait for all promises to resolve.
+- `Promise::race()`: Wait for the first promise to resolve.
+
+---
+
+## Limitations
+
+### Forking and Data Sharing
+
+When simulating threads with `fork`, data cannot be returned directly from the child process
+to the parent. Use the `shmop` extension to share memory between processes.
+
+However:
+
+- **Avoid returning large or complex objects**, as this may cause memory exhaustion.
+
+---
+
+## Installation
+
+### Requirements
+
+#### Non-ZTS (Default PHP)
+
+- PHP ≥8.1
+- `pcntl` extension
+- `shmop` extension
+
+#### ZTS (Zend Thread Safety)
+
+- PHP ≥8.1 compiled with `--enable-zts`
+- `parallel` extension
+- `shmop` extension (for Promises support)
+
+### Install via Composer
+
+```bash
+composer require byjg/phpthread
 ```
 
-## Basic Thread Usage
-
-```php
-// Create the Threads passing a callable
-$thread1 = new ByJG\PHPThread\Thread( $threadClousure );
-$thread2 = new ByJG\PHPThread\Thread( $threadClousure );
-
-// Start the threads and passing parameters
-$thread1->execute(1);
-$thread2->execute(2);
-
-// Wait the threads to finish
-$thread1->waitFinish();
-$thread2->waitFinish();
-
-// Get the thread result
-echo "Thread Result 1: " . $thread1->getResult();
-echo "Thread Result 2: " . $thread2->getResult();
-```
-
-## Thread Pool Usage
-
-You can create a pool of threads. This is particulary interesting if you want to queue Workers after the pool is started.
-
-```php
-// Create a instance of the ThreadPool
-$threadPool = new \ByJG\PHPThread\ThreadPool();
-
-// Create and queue the threads with call parameters
-$threadPool->queueWorker( $threadClousure, [ 1 ]);
-$threadPool->queueWorker( $threadClousure, [ 2 ]);
-
-// Starts all the threads in the queue
-$threadPool->startPool();
-
-// Add more workers after the pool is started:
-$threadPool->queueWorker( $threadClousure, [ 3 ]);
-$threadPool->queueWorker( $threadClousure, [ 4 ]);
-
-// Wait until there is no more active workers
-$threadPool->waitWorkers();
-
-// Get the return value from the thread.
-foreach ($threadPool->getThreads() as $thid) {
-    echo 'Result: ' . $threadPool->getThreadResult($thid) . "\n";
-}
-
-echo "\n\nEnded!\n";
-```
-
-**Important Note for the FORK implementation**
-
-In order to get working the 'getResult' of the fork implementation is necessary pass the setup parameters to the
-Thread::setThreadHandlerArguments() method; 
-
-```php
-<?php
-
-$thread = new \ByJG\PHPThread\Thread([$someinstance, $somemethod]);
-$thread->setThreadHandlerArguments(
-    [
-        'max-size' => 0x100000,
-        'default-permission' => '0700'
-    ]
-);
-```
-
-## Install
-
-Just type: `composer require "byjg/phpthread=2.3.*"`
-
-## Major changes from 1.* to 2.*
-
-- Method Thread::start() renamed to Thread::execute()
-- Implemented PThread and Fork as a Polyfill class
-
-## FAQ
-
-**How do I instantiate a method class?**
-
-```php
-$thr = new ByJG\PHPThread\Thread(array('classname', 'methodname'));
-```
-
-or
-
-```php
-$instance = new myClass();
-$thr = new ByJG\PHPThread\Thread(array($instance, 'methodname'));
-```
-
-## Dependencies
+---
 
 ```mermaid
 flowchart TD

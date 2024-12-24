@@ -2,7 +2,9 @@
 
 namespace ByJG\PHPThread;
 
+use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
+use stdClass;
 
 /**
  * Manage a pool of threads.
@@ -15,71 +17,69 @@ class ThreadPool
      * The list of threads
      * @var array
      */
-    protected $threadList = array();
+    protected array $threadList = array();
 
     /**
      * The list of threads instances
      * @var array
      */
-    protected $threadInstance = array();
+    protected array $threadInstance = array();
 
-    protected $poolStarted = false;
+    protected bool $poolStarted = false;
+
+    protected int $currentId = 0;
 
     /**
-     * Queue a new thread worker
+     * Add or enqueue a new thread worker.
      *
      * @param Closure $closure
      * @param array $params The thread parameters
-     * @param string $thid The Thread id to identify the ID
-     * @return string
+     * @return int The ID of the queued worker.
      */
-    public function queueWorker(Closure $closure, $params = [], $thid = null)
+    public function addWorker(Closure $closure, ...$params): int
     {
-        if (!is_array($params)) {
-            throw new \InvalidArgumentException('The params needs to be an array');
-        }
+        $thid = $this->currentId++;
 
-        if (is_null($thid)) {
-            $thid = uniqid("", true);
-        }
-
-        $data = new \stdClass;
+        $data = new stdClass;
         $data->closure = $closure;
         $data->params = $params;
 
         $this->threadList[$thid] = $data;
 
-        if ($this->isPoolStarted()) {
-            $this->startWorker($thid);
+        if ($this->hasStarted()) {
+            $this->runWorker($thid);
         }
 
         return $thid;
     }
 
     /**
-     * Start all the workers in the queue
+     * Start all workers in the queue.
      */
-    public function startPool()
+    public function startAll(): void
     {
+        if ($this->hasStarted()) {
+            return;
+        }
+
         foreach ($this->threadList as $key => $value) {
-            $this->startWorker($key);
+            $this->runWorker($key);
         }
 
         $this->poolStarted = true;
     }
 
-    protected function startWorker($threadItemKey)
+    protected function runWorker(int $threadItemKey): void
     {
-        $thread = new Thread($this->threadList[$threadItemKey]->closure);
-
-        call_user_func_array([$thread, 'execute'], $this->threadList[$threadItemKey]->params);
+        $thread = Thread::create($this->threadList[$threadItemKey]->closure);
         $this->threadInstance[$threadItemKey] = $thread;
+        $thread->start(...$this->threadList[$threadItemKey]->params);
     }
 
     /**
-     * Stop all the workers in the queue
+     * Stop or terminate all workers in the pool.
      */
-    public function stopPool()
+    public function stopAll(): void
     {
         foreach ($this->threadList as $key => $value) {
             $this->removeWorker($key);
@@ -89,48 +89,50 @@ class ThreadPool
     }
 
     /**
-     * Wait until all workers are finished
+     * Wait until all workers are finished.
      */
-    public function waitWorkers()
+    public function waitForCompletion(): void
     {
+        /** @var ThreadInterface $value */
         foreach ($this->threadInstance as $value) {
-            $value->waitFinish();
+            $value->join();
         }
     }
 
     /**
-     * How many workers are active
+     * Get the number of active workers.
      *
      * @return int
      */
-    public function activeWorkers()
+    public function countActiveWorkers(): int
     {
         $count = 0;
 
+        /** @var ThreadInterface $value */
         foreach ($this->threadInstance as $value) {
-            $count += $value->isAlive() ? 1 : 0;
+            $count += $value->isRunning() ? 1 : 0;
         }
 
         return $count;
     }
 
     /**
-     * Return a list of threads
+     * List all threads in the pool.
      *
      * @return array
      */
-    public function getThreads()
+    public function listThreads(): array
     {
         return array_keys($this->threadInstance);
     }
 
     /**
-     * Get the thread result from the Shared Memory
+     * Retrieve the result of a specific thread from shared memory.
      *
-     * @param string $threadId
+     * @param int $threadId
      * @return mixed
      */
-    public function getThreadResult($threadId)
+    public function getThreadResult(int $threadId): mixed
     {
         if (!isset($this->threadInstance[$threadId])) {
             return null;
@@ -140,12 +142,12 @@ class ThreadPool
     }
 
     /**
-     * Check if the thread is running or not
+     * Check if a specific thread is running.
      *
-     * @param string $threadId
-     * @return bool
+     * @param int $threadId
+     * @return bool|null Returns true if running, false if not, and null if thread ID is invalid.
      */
-    public function isAlive($threadId)
+    public function isRunning(int $threadId): bool|null
     {
         $thread = $this->getThreadById($threadId);
 
@@ -153,16 +155,16 @@ class ThreadPool
             return null;
         }
 
-        return $thread->isAlive();
+        return $thread->isRunning();
     }
 
     /**
      * Return a Thread object based on your id
      *
-     * @param string $threadId
-     * @return Thread
+     * @param int $threadId
+     * @return ThreadInterface|null
      */
-    protected function getThreadById($threadId)
+    protected function getThreadById(int $threadId): ?ThreadInterface
     {
         if (!isset($this->threadInstance[$threadId])) {
             return null;
@@ -172,20 +174,20 @@ class ThreadPool
     }
 
     /**
-     * Stops a specific thread
+     * Stop a specific worker.
      *
-     * @param string $threadId
-     * @param bool $remove
-     * @return bool
+     * @param int $threadId
+     * @param bool $remove Whether to remove the worker after stopping.
+     * @return bool|null
      */
-    public function stopWorker($threadId, $remove = true)
+    public function stopWorker(int $threadId, bool $remove = true): bool|null
     {
         $thread = $this->getThreadById($threadId);
 
         if (is_null($thread)) {
             return null;
-        } elseif ($thread->isAlive()) {
-            $thread->stop();
+        } elseif ($thread->isRunning()) {
+            $thread->terminate();
             if ($remove) {
                 $this->removeWorker($threadId);
             }
@@ -195,14 +197,24 @@ class ThreadPool
         }
     }
 
-    public function removeWorker($threadId)
+    /**
+     * Remove a specific worker from the pool.
+     *
+     * @param int $threadId
+     */
+    public function removeWorker(int $threadId): void
     {
         $this->stopWorker($threadId, false);
         unset($this->threadInstance[$threadId]);
         unset($this->threadList[$threadId]);
     }
 
-    public function isPoolStarted()
+    /**
+     * Check if the thread pool has been started.
+     *
+     * @return bool
+     */
+    public function hasStarted(): bool
     {
         return $this->poolStarted;
     }

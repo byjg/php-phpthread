@@ -2,11 +2,13 @@
 
 namespace ByJG\PHPThread;
 
+use ByJG\Cache\Exception\InvalidArgumentException;
 use ByJG\PHPThread\Handler\ForkHandler;
 use ByJG\PHPThread\Handler\ParallelHandler;
 use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
-use InvalidArgumentException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use RuntimeException;
 
 /**
@@ -17,54 +19,19 @@ use RuntimeException;
  *
  * Forks the process.
  */
-class Thread implements ThreadInterface
+class Thread
 {
     /**
-     * @var ThreadInterface
-     */
-    private $threadInstance = null;
-
-    /**
-     * constructor method
-     *
      * @param Closure $closure
-     */
-    public function __construct(Closure $closure)
-    {
-        $this->setClosure($closure);
-    }
-
-    private $threadHandlerArguments = [];
-
-    /**
-     * @param array $arguments
-     */
-    public function setThreadHandlerArguments($arguments)
-    {
-        $this->threadHandlerArguments = $arguments;
-    }
-
-    private function getThreadHandlerArguments($property)
-    {
-        return isset($this->threadHandlerArguments[$property]) ? $this->threadHandlerArguments[$property] : null;
-    }
-
-    /**
+     * @param Closure|null $onFinish
      * @return ThreadInterface
      */
-    public function getThreadInstance()
+    public static function create(Closure $closure, ?Closure $onFinish = null): ThreadInterface
     {
-        if (!is_null($this->threadInstance)) {
-            return $this->threadInstance;
-        }
-
         if (class_exists('\parallel\Runtime', true)) {
-            $this->threadInstance = new ParallelHandler();
+            $instance = new ParallelHandler();
         } elseif (function_exists('pcntl_fork')) {
-            $this->threadInstance = new ForkHandler(
-                $this->getThreadHandlerArguments('max-size'),
-                $this->getThreadHandlerArguments('default-permission')
-            );
+            $instance = new ForkHandler($onFinish);
         } else {
             throw new RuntimeException(
                 'PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl. ' .
@@ -72,69 +39,19 @@ class Thread implements ThreadInterface
             );
         }
 
-        return $this->threadInstance;
-    }
+        $instance->setClosure($closure);
 
-
-    /**
-     * Start the thread
-     *
-     * @throws RuntimeException
-     */
-    public function execute()
-    {
-        $args = func_get_args();
-        call_user_func_array([$this->getThreadInstance(), 'execute'], $args);
+        return $instance;
     }
 
     /**
-     * Get the thread result from the shared memory block and erase it
-     *
-     * @return mixed
-     * @throws \Throwable
+     * @throws ContainerExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws NotFoundExceptionInterface
      */
-    public function getResult()
+    public static function gc(): void
     {
-        return $this->getThreadInstance()->getResult();
+        SharedMemory::getInstance()->clear();
     }
 
-    /**
-     * Kill a thread
-     *
-     * @param int $signal
-     * @param bool $wait
-     */
-    public function stop($signal = SIGKILL, $wait = false)
-    {
-        return $this->getThreadInstance()->stop($signal, $wait);
-    }
-
-    /**
-     * Check if the forked process is alive
-     * @return bool
-     */
-    public function isAlive()
-    {
-        return $this->getThreadInstance()->isAlive();
-    }
-
-    public function waitFinish()
-    {
-        $this->getThreadInstance()->waitFinish();
-    }
-
-    /**
-     * Set the thread callable method
-     * @param Closure $closure
-     * @return mixed
-     */
-    public function setClosure(Closure $closure)
-    {
-        $this->getThreadInstance()->setClosure($closure);
-    }
-
-    public function getClassName()
-    {
-        return $this->getThreadInstance()->getClassName();
-    }
 }
