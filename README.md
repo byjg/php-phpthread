@@ -21,7 +21,6 @@ bridging the gap for a language that was not inherently designed for threading.
 4. [Features](#features)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
-7. [License](#license)
 
 ---
 
@@ -129,6 +128,8 @@ composer require byjg/phpthread
 
 ---
 
+## Dependencies
+
 ```mermaid
 flowchart TD
     byjg/phpthread --> byjg/cache-engine
@@ -136,3 +137,6 @@ flowchart TD
     byjg/phpthread --> ext-pcntl
     byjg/phpthread --> ext-pthreads*
 ```
+
+----
+[Open source ByJG](http://opensource.byjg.com)
