@@ -17,3 +17,7 @@ There are some caveats when using shared memory:
   you are sharing.
 - If you are using thread in threads or Promises, there will be some files left in the tmpfs filesystem.
   You can remove them by calling the `Thread::gc()` or `Promise::gc()` method by the end of the execution.
+
+## Promises won't work with PHP ZTS
+
+So far, the Promises won't work with PHP ZTS. 
