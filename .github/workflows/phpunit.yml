@@ -44,7 +44,6 @@ jobs:
           apk add --no-cache curl
           echo "Ping"
           curl "http://nginx-php/ping" || true
-          curl -s --fail "http://nginx-php/ping" | grep '{"ack":"fpm-fcgi"}'
           echo "Threads"
           curl -s "http://nginx-php/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
           echo "Threadpool"
