@@ -43,14 +43,14 @@ jobs:
         run: |
           apk add --no-cache curl
           echo "Ping"
-          curl "http://localhost:8081/ping" | true
-          curl -s --fail "http://localhost:8081/ping" | grep '{"ack":"fpm-fcgi"}'
+          curl "http://nginx-php:8081/ping" || true
+          curl -s --fail "http://nginx-php:8081/ping" | grep '{"ack":"fpm-fcgi"}'
           echo "Threads"
-          curl -s "http://localhost:8081/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php:8081/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
           echo "Threadpool"
-          curl -s "http://localhost:8081/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php:8081/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
           echo "Promise"
-          curl -s "http://localhost:8081/promise" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php:8081/promise" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
 
   Build-zts:
     runs-on: 'ubuntu-latest'
