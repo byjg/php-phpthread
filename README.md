@@ -93,14 +93,7 @@ Supported Promise Methods:
 
 ## Limitations
 
-### Forking and Data Sharing
-
-When simulating threads with `fork`, data cannot be returned directly from the child process
-to the parent. Use the `shmop` extension to share memory between processes.
-
-However:
-
-- **Avoid returning large or complex objects**, as this may cause memory exhaustion.
+Read the [full list of limitations](docs/limitations.md).
 
 ---
 

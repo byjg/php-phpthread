@@ -4,6 +4,7 @@ namespace ByJG\PHPThread\Handler;
 
 use ByJG\PHPThread\ThreadStatus;
 use parallel\Runtime;
+use RuntimeException;
 
 /** @psalm-suppress UndefinedClass */
 class ParallelHandler implements ThreadInterface
@@ -11,6 +12,13 @@ class ParallelHandler implements ThreadInterface
     protected \Closure $closure;
     protected Runtime $runtime;
     protected $future = null;
+
+    public function __construct()
+    {
+        if (php_sapi_name() != 'cli') {
+            throw new RuntimeException('Threads only works in CLI mode');
+        }
+    }
 
     public function start(mixed ...$args): void
     {
