@@ -43,6 +43,7 @@ jobs:
         run: |
           apk add --no-cache curl
           echo "Ping"
+          curl "http://localhost:8081/ping" | true
           curl -s --fail "http://localhost:8081/ping" | grep '{"ack":"fpm-fcgi"}'
           echo "Threads"
           curl -s "http://localhost:8081/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
