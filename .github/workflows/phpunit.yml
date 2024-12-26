@@ -20,12 +20,31 @@ jobs:
           - "8.2"
           - "8.1"
 
+    services:
+      nginx-php:
+        image: byjg/php:8.3-fpm-nginx
+        env:
+          NGINX_ROOT: /srv/tests/public
+          PHP_CONTROLLER: "/app.php"
+        ports:
+          - 8081:80
+        options: >-
+          --rm
+          -v ${{ github.workspace }}:/srv
+          -w /srv
+
     steps:
       - uses: actions/checkout@v4
       - run: composer install
       - run: php tests/get_class_name.php
       - run: ./vendor/bin/psalm
       - run: ./vendor/bin/phpunit
+      - name: Validate PHP-FPM. Threads should not work.
+        run: |
+          curl -s --fail "http://localhost:8081/ping" | grep '{"ack":"fpm-fcgi"}'
+          curl -s "http://localhost:8081/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://localhost:8081/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://localhost:8081/promise" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
 
   Build-zts:
     runs-on: 'ubuntu-latest'
