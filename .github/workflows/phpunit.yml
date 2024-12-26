@@ -41,6 +41,7 @@ jobs:
       - run: ./vendor/bin/phpunit
       - name: Validate PHP-FPM. Threads should not work.
         run: |
+          apk add --no-cache curl
           curl -s --fail "http://localhost:8081/ping" | grep '{"ack":"fpm-fcgi"}'
           curl -s "http://localhost:8081/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
           curl -s "http://localhost:8081/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
