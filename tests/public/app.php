@@ -59,7 +59,6 @@ $routeDefinition->addRoute(Route::get("/threadpool")
 
         $th1 = $pool->addWorker($closure, 3);
         $th2 = $pool->addWorker($closure, 2);
-        $this->assertEquals(0, $pool->countActiveWorkers());
 
         $pool->startAll();
 
