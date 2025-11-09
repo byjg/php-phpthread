@@ -1,4 +1,8 @@
-## Thread
+---
+sidebar_position: 1
+---
+
+# Thread
 
 Assume for the examples below the class 'Foo' and the method 'bar':
 
@@ -21,7 +25,7 @@ $threadClousure = function ($t)
     };
 ```
 
-## Basic Thread Usage
+### Basic Thread Usage
 
 ```php
 // Create the Threads passing a callable

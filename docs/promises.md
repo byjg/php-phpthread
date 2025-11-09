@@ -1,8 +1,12 @@
+---
+sidebar_position: 3
+---
+
 # Promises
 
-There is a very basic implementation of Promises. It tries to mimic the JavaScript Promises,
-however it just implements `.then()` and it doesn't have any of the other features like chaining, return,  `.all()` ,
-etc.
+This library provides an implementation of Promises that mimics the JavaScript Promise model.
+The implementation is truly asynchronous and non-blocking, supporting multiple features including
+`.then()`, `.catch()`, `.finally()`, `.all()`, `.race()`, `.resolve()`, and `.reject()`.
 
 Following the JavaScript concept, when the promise is created, it is executed in background
 and the status is pending.

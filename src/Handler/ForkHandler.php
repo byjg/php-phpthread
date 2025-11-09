@@ -49,6 +49,7 @@ class ForkHandler implements ThreadInterface
      * @param Closure $closure
      * @return void
      */
+    #[\Override]
     public function setClosure(Closure $closure): void
     {
         $this->closure = $closure;
@@ -62,6 +63,7 @@ class ForkHandler implements ThreadInterface
      * @throws NotFoundExceptionInterface
      * @throws StorageErrorException
      */
+    #[\Override]
     public function start(mixed ...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
@@ -115,6 +117,7 @@ class ForkHandler implements ThreadInterface
      * @throws NotFoundExceptionInterface
      * @throws Throwable
      */
+    #[\Override]
     public function getResult(): mixed
     {
         if (is_null($this->threadKey)) {
@@ -144,6 +147,7 @@ class ForkHandler implements ThreadInterface
      * @param int $signal
      * @param bool $wait
      */
+    #[\Override]
     public function terminate(int $signal = SIGKILL, bool $wait = false): void
     {
         if ($this->isRunning()) {
@@ -159,6 +163,7 @@ class ForkHandler implements ThreadInterface
      * Check if the forked process is alive
      * @return bool
      */
+    #[\Override]
     public function isRunning(): bool
     {
         return (pcntl_waitpid($this->pid, $status, WNOHANG) === 0);
@@ -176,6 +181,7 @@ class ForkHandler implements ThreadInterface
         }
     }
 
+    #[\Override]
     public function join(): void
     {
         //pcntl_wait($status);
@@ -189,11 +195,13 @@ class ForkHandler implements ThreadInterface
         return $this->pid;
     }
 
+    #[\Override]
     public function getClassName(): string
     {
         return ForkHandler::class;
     }
 
+    #[\Override]
     public function getStatus(): ThreadStatus
     {
         if (empty($this->threadKey)) {

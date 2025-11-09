@@ -4,3 +4,6 @@ vendor
 config/cacheconfig.php
 .idea/
 .phpunit.result.cache
+phpunit.coverage.xml
+phpunit.report.xml
+*.bak
