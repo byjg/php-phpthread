@@ -94,6 +94,35 @@ Supported Promise Methods:
 
 ## Limitations
 
+### CLI Mode Only
+
+:::caution Important
+This library **only works in CLI mode** (command-line interface). It **will NOT work** in web server environments such as:
+- PHP-FPM
+- Apache with mod_php
+- Any other web server SAPI
+:::
+
+**Why?**
+
+Both threading approaches used by this library require direct process control, which is unavailable in web server environments:
+
+- **pcntl extension** (used for forking): Disabled in web server contexts for security and stability reasons. The `pcntl_fork()` function and related process control functions only work in CLI mode.
+- **parallel extension** (used for true threading): Also requires CLI mode and is not available in web server SAPIs.
+
+Additionally, forking or creating threads within a web server process would interfere with the server's own process/thread management, potentially causing instability.
+
+**Use Cases:**
+
+This library is designed for:
+- CLI scripts and daemons
+- Background job processors
+- Command-line tools
+- Long-running CLI applications
+- Scheduled tasks (cron jobs)
+
+For web applications requiring asynchronous processing, consider using message queues (RabbitMQ, Redis, etc.) with background workers running in CLI mode.
+
 ### Forking and Data Sharing
 
 When simulating threads with `fork`, data cannot be returned directly from the child process
