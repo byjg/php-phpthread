@@ -13,7 +13,7 @@
     "phpunit/phpunit": "^10|^11",
     "vimeo/psalm": "^5.9|^6.12",
     "react/promise": "^3.2",
-    "react/event-loop": "^1.5"
+    "react/event-loop": "^1.5",
     "byjg/restserver": "^5.0"
   },
   "suggest": {
