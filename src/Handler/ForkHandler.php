@@ -39,6 +39,11 @@ class ForkHandler implements ThreadInterface
         if (!function_exists('pcntl_fork')) {
             throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
         }
+
+        if (php_sapi_name() != 'cli') {
+            throw new RuntimeException('Threads only works in CLI mode');
+        }
+
         SharedMemory::getInstance();
         $this->onFinish = $onFinish;
     }
