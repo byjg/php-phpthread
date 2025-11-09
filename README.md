@@ -21,6 +21,7 @@ bridging the gap for a language that was not inherently designed for threading.
 4. [Features](#features)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
+7. [Dependencies](#dependencies)
 
 ---
 
@@ -77,7 +78,7 @@ all PHP distributions.
 
 - **Thread Management**: Simplified thread creation and execution ([docs](docs/thread.md)).
 - **Thread Pools**: Efficiently manage and reuse threads for multiple tasks ([docs](docs/threadpool.md)).
-- **Promises (Experimental)**: Asynchronous task management with a promise-like API ([docs](docs/promises.md)).
+- **Promises**: Truly asynchronous and non-blocking task management with a JavaScript-like Promise API ([docs](docs/promises.md), [benchmark](docs/promises-benchmark.md)).
 
 Supported Promise Methods:
 
@@ -133,9 +134,6 @@ composer require byjg/phpthread
 ```mermaid
 flowchart TD
     byjg/phpthread --> byjg/cache-engine
-    byjg/phpthread --> ext-posix
-    byjg/phpthread --> ext-pcntl
-    byjg/phpthread --> ext-pthreads*
 ```
 
 ----

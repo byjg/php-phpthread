@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 # Promise Benchmark
 
 The `ByJG PHPThread Promise` implements Promises in PHP, adhering to the JavaScript Promise model.
