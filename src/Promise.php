@@ -74,6 +74,7 @@ class Promise implements PromiseInterface
      * @throws ContainerExceptionInterface
      * @throws NotFoundExceptionInterface
      */
+    #[\Override]
     public function getResult(): ?PromiseResult
     {
         if (!empty($this->result)) {
@@ -97,6 +98,7 @@ class Promise implements PromiseInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      */
+    #[\Override]
     public function getStatus(): PromiseStatus
     {
         if ($this->thread->getStatus() === ThreadStatus::running) {
@@ -113,6 +115,7 @@ class Promise implements PromiseInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      */
+    #[\Override]
     public function isFulfilled(): bool
     {
         return $this->getStatus() === PromiseStatus::fulfilled;
@@ -121,6 +124,7 @@ class Promise implements PromiseInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function then(Closure $onFulfilled, ?Closure $onRejected = null): PromiseInterface
     {
         $then = function ($resolve, $reject) use ($onFulfilled, $onRejected) {
@@ -146,6 +150,7 @@ class Promise implements PromiseInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function catch(Closure $onRejected): PromiseInterface
     {
         return $this->then(fn($resolve) => $resolve, $onRejected);
@@ -154,6 +159,7 @@ class Promise implements PromiseInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function finally(Closure $onFinally): PromiseInterface
     {
         return $this->then(
@@ -169,6 +175,7 @@ class Promise implements PromiseInterface
      * @throws InvalidArgumentException
      * @throws NotFoundExceptionInterface
      */
+    #[\Override]
     public function await(): mixed
     {
         $this->thread->join();
