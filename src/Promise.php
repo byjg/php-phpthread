@@ -121,7 +121,7 @@ class Promise implements PromiseInterface
     /**
      * @inheritDoc
      */
-    public function then(Closure $onFulfilled, Closure $onRejected = null): PromiseInterface
+    public function then(Closure $onFulfilled, ?Closure $onRejected = null): PromiseInterface
     {
         $then = function ($resolve, $reject) use ($onFulfilled, $onRejected) {
             $status = $this->getStatus();
