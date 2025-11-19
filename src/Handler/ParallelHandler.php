@@ -20,32 +20,38 @@ class ParallelHandler implements ThreadInterface
         }
     }
 
+    #[\Override]
     public function start(mixed ...$args): void
     {
         $this->runtime = new Runtime();
         $this->future = $this->runtime->run($this->closure, $args);
     }
 
+    #[\Override]
     public function getResult(): mixed
     {
         return $this->future->value();
     }
 
+    #[\Override]
     public function terminate(int $signal = SIGKILL, bool $wait = false)
     {
         $this->runtime->kill();
     }
 
+    #[\Override]
     public function isRunning(): bool
     {
         return !$this->future->cancelled() && !$this->future->done();
     }
 
+    #[\Override]
     public function setClosure(\Closure $closure): void
     {
         $this->closure = $closure;
     }
 
+    #[\Override]
     public function join(): void
     {
         while (!$this->future->cancelled() && !$this->future->done()) {
@@ -53,11 +59,13 @@ class ParallelHandler implements ThreadInterface
         }
     }
 
+    #[\Override]
     public function getClassName(): string
     {
         return ParallelHandler::class;
     }
 
+    #[\Override]
     public function getStatus(): ThreadStatus
     {
         if (empty($this->future)) {

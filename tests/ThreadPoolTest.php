@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 class ThreadPoolTest extends TestCase
 {
+    #[\Override]
     public function tearDown(): void
     {
         Thread::gc();

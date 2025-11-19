@@ -1,3 +1,9 @@
+---
+sidebar_position: 2
+---
+
+# Thread Pool
+
 ## Thread Pool Usage
 
 You can create a pool of threads. This is particulary interesting if you want to queue Workers
