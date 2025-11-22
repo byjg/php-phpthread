@@ -110,6 +110,9 @@ class ForkHandler implements ThreadInterface
      */
     protected function saveResult(mixed $object): void
     {
+        if ($this->threadKey === null) {
+            throw new RuntimeException('Thread key is not initialized');
+        }
         SharedMemory::getInstance()->set($this->threadKey, $object);
     }
 

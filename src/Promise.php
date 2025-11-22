@@ -132,7 +132,11 @@ class Promise implements PromiseInterface
             while ($status === PromiseStatus::pending) {
                 $status = $this->getStatus();
             }
-            $args = $this->getResult()->getResult();
+            $result = $this->getResult();
+            if ($result === null) {
+                throw new \RuntimeException('Promise result is null');
+            }
+            $args = $result->getResult();
             if ($status === PromiseStatus::fulfilled) {
                 $resolve($onFulfilled($args));
             } else if ($status === PromiseStatus::rejected) {
@@ -181,7 +185,7 @@ class Promise implements PromiseInterface
         $this->thread->join();
         $x = $this->getResult();
         if (is_null($x)) {
-            echo $this->getPromiseId() . "\n";
+            throw new \RuntimeException('Promise result is null for promise: ' . $this->getPromiseId());
         }
         return $x->getResult();
     }
@@ -193,11 +197,19 @@ class Promise implements PromiseInterface
             while (count($promises) > 0) {
                 foreach ($promises as $key => $promise) {
                     if ($promise->getStatus() === PromiseStatus::rejected) {
-                        $reject($promise->getResult()->getResult());
+                        $result = $promise->getResult();
+                        if ($result === null) {
+                            throw new \RuntimeException('Promise result is null');
+                        }
+                        $reject($result->getResult());
                         return;
                     }
                     if ($promise->getStatus() === PromiseStatus::fulfilled) {
-                        $results[] = $promise->getResult()->getResult();
+                        $result = $promise->getResult();
+                        if ($result === null) {
+                            throw new \RuntimeException('Promise result is null');
+                        }
+                        $results[] = $result->getResult();
                         unset($promises[$key]);
                     }
                 }
@@ -212,11 +224,19 @@ class Promise implements PromiseInterface
             while (count($promises) > 0) {
                 foreach ($promises as $promise) {
                     if ($promise->getStatus() === PromiseStatus::rejected) {
-                        $reject($promise->getResult()->getResult());
+                        $result = $promise->getResult();
+                        if ($result === null) {
+                            throw new \RuntimeException('Promise result is null');
+                        }
+                        $reject($result->getResult());
                         return;
                     }
                     if ($promise->getStatus() === PromiseStatus::fulfilled) {
-                        $resolve($promise->getResult()->getResult());
+                        $result = $promise->getResult();
+                        if ($result === null) {
+                            throw new \RuntimeException('Promise result is null');
+                        }
+                        $resolve($result->getResult());
                         return;
                     }
                 }
