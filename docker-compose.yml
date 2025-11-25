@@ -1,0 +1,14 @@
+services:
+  nginx-php:
+    # You can control the PHP version via an env var, e.g. PHP_VERSION=8.3
+    image: "byjg/php:${PHP_VERSION:-8.5}-fpm-nginx"
+    environment:
+      NGINX_ROOT: /srv/tests/public
+      PHP_CONTROLLER: "/app.php"
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/srv
+    working_dir: /srv
+    # --rm in docker-compose is usually modeled by not setting restart
+    # restart: "no"
