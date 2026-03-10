@@ -1,4 +1,12 @@
+---
+sidebar_key: phpthread
+tags: [php, concurrency]
+---
+
 # ByJG PHPThread: Simplified Threads and Non-Blocking Code in PHP
+
+ByJG PHPThread simplifies working with threads and non-blocking code in PHP,
+bridging the gap for a language that was not inherently designed for threading.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml)
@@ -6,9 +14,6 @@
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-phpthread/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-phpthread.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-phpthread.svg)](https://github.com/byjg/php-phpthread/releases/)
-
-ByJG PHPThread simplifies working with threads and non-blocking code in PHP,
-bridging the gap for a language that was not inherently designed for threading.
 
 ---
 
