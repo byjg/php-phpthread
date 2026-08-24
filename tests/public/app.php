@@ -3,7 +3,7 @@
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadPool;
 use ByJG\RestServer\HttpRequest;
-use ByJG\RestServer\HttpRequestHandler;
+use ByJG\RestServer\Server;
 use ByJG\RestServer\HttpResponse;
 use ByJG\RestServer\OutputProcessor\JsonOutputProcessor;
 use ByJG\RestServer\Route\Route;
@@ -81,5 +81,5 @@ $routeDefinition->addRoute(Route::get('/promise')
     })
 );
 
-$restServer = new HttpRequestHandler();
+$restServer = new Server();
 $restServer->handle($routeDefinition);
