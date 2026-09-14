@@ -12,7 +12,7 @@ bridging the gap for a language that was not inherently designed for threading.
 [![Build Status](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-phpthread/)
-[![GitHub license](https://img.shields.io/github/license/byjg/php-phpthread.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-phpthread.svg)](https://opensource.byjg.com/license/)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-phpthread.svg)](https://github.com/byjg/php-phpthread/releases/)
 
 ---
@@ -163,13 +163,6 @@ composer require byjg/phpthread
 ```
 
 ---
-
-## Dependencies
-
-```mermaid
-flowchart TD
-    byjg/phpthread --> byjg/cache-engine
-```
 
 ----
 [Open source ByJG](http://opensource.byjg.com)
