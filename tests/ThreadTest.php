@@ -1,5 +1,6 @@
 <?php
 
+namespace Tests;
 
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadStatus;

@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadPool;
 use PHPUnit\Framework\TestCase;

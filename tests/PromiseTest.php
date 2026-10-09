@@ -1,5 +1,6 @@
 <?php
 
+namespace Tests;
 
 use ByJG\PHPThread\Promise;
 use ByJG\PHPThread\PromiseStatus;

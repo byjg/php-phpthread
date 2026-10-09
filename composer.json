@@ -14,7 +14,8 @@
 
     "react/promise": "^3.2",
     "react/event-loop": "^1.5",
-    "byjg/restserver": "^7.0"
+    "byjg/restserver": "^7.0",
+    "psalm/phar": "^6.16"
   },
   "suggest": {
     "ext-pthreads": "*"
@@ -25,11 +26,13 @@
       "ByJG\\PHPThread\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
   "scripts": {
     "test": "vendor/bin/phpunit",
-    "psalm": [
-      "@composer --working-dir=tools/psalm update --no-interaction",
-      "tools/psalm/vendor/bin/psalm --threads=1"
-    ]
+    "psalm": "vendor/bin/psalm.phar"
   }
 }

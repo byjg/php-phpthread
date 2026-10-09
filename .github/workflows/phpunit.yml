@@ -37,7 +37,7 @@ jobs:
           -w /srv
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: composer install
       - run: php tests/get_class_name.php
       - run: composer test
@@ -64,7 +64,7 @@ jobs:
           - "8.3"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install requirements
         run: |
           apt -y -qq update
@@ -99,18 +99,13 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Composer
         run: composer install
 
-      - name: Composer (psalm)
-
-        run: composer --working-dir=tools/psalm update --no-interaction
-
-
       - name: Psalm
-        run: ./tools/psalm/vendor/bin/psalm
+        run: ./vendor/bin/psalm.phar
           --show-info=true
           --report=psalm-results.sarif || [ $? = 2 ]
 
