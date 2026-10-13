@@ -25,11 +25,11 @@ class Promise implements PromiseInterface
 
         $fn = function () use ($executor) {
             $resolve = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::fulfilled));
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::Fulfilled));
             };
 
             $reject = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::rejected));
+                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::Rejected));
             };
 
             try {
@@ -101,11 +101,11 @@ class Promise implements PromiseInterface
     #[\Override]
     public function getStatus(): PromiseStatus
     {
-        if ($this->thread->getStatus() === ThreadStatus::running) {
-            return PromiseStatus::pending;
+        if ($this->thread->getStatus() === ThreadStatus::Running) {
+            return PromiseStatus::Pending;
         }
 
-        return $this->getResult()?->getStatus() ?? PromiseStatus::pending;
+        return $this->getResult()?->getStatus() ?? PromiseStatus::Pending;
     }
 
     /**
@@ -118,7 +118,7 @@ class Promise implements PromiseInterface
     #[\Override]
     public function isFulfilled(): bool
     {
-        return $this->getStatus() === PromiseStatus::fulfilled;
+        return $this->getStatus() === PromiseStatus::Fulfilled;
     }
 
     /**
@@ -129,7 +129,7 @@ class Promise implements PromiseInterface
     {
         $then = function ($resolve, $reject) use ($onFulfilled, $onRejected) {
             $status = $this->getStatus();
-            while ($status === PromiseStatus::pending) {
+            while ($status === PromiseStatus::Pending) {
                 $status = $this->getStatus();
             }
             $result = $this->getResult();
@@ -137,9 +137,9 @@ class Promise implements PromiseInterface
                 throw new \RuntimeException('Promise result is null');
             }
             $args = $result->getResult();
-            if ($status === PromiseStatus::fulfilled) {
+            if ($status === PromiseStatus::Fulfilled) {
                 $resolve($onFulfilled($args));
-            } else if ($status === PromiseStatus::rejected) {
+            } else if ($status === PromiseStatus::Rejected) {
                 if ($onRejected) {
                     $reject($onRejected($args));
                 } else {
@@ -196,7 +196,7 @@ class Promise implements PromiseInterface
             $results = [];
             while (count($promises) > 0) {
                 foreach ($promises as $key => $promise) {
-                    if ($promise->getStatus() === PromiseStatus::rejected) {
+                    if ($promise->getStatus() === PromiseStatus::Rejected) {
                         $result = $promise->getResult();
                         if ($result === null) {
                             throw new \RuntimeException('Promise result is null');
@@ -204,7 +204,7 @@ class Promise implements PromiseInterface
                         $reject($result->getResult());
                         return;
                     }
-                    if ($promise->getStatus() === PromiseStatus::fulfilled) {
+                    if ($promise->getStatus() === PromiseStatus::Fulfilled) {
                         $result = $promise->getResult();
                         if ($result === null) {
                             throw new \RuntimeException('Promise result is null');
@@ -223,7 +223,7 @@ class Promise implements PromiseInterface
         return new Promise(function ($resolve, $reject) use ($promises) {
             while (count($promises) > 0) {
                 foreach ($promises as $promise) {
-                    if ($promise->getStatus() === PromiseStatus::rejected) {
+                    if ($promise->getStatus() === PromiseStatus::Rejected) {
                         $result = $promise->getResult();
                         if ($result === null) {
                             throw new \RuntimeException('Promise result is null');
@@ -231,7 +231,7 @@ class Promise implements PromiseInterface
                         $reject($result->getResult());
                         return;
                     }
-                    if ($promise->getStatus() === PromiseStatus::fulfilled) {
+                    if ($promise->getStatus() === PromiseStatus::Fulfilled) {
                         $result = $promise->getResult();
                         if ($result === null) {
                             throw new \RuntimeException('Promise result is null');

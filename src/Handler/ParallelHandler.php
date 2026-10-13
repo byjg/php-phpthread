@@ -69,13 +69,13 @@ class ParallelHandler implements ThreadInterface
     public function getStatus(): ThreadStatus
     {
         if (empty($this->future)) {
-            return ThreadStatus::notStarted;
+            return ThreadStatus::NotStarted;
         } else if ($this->future->cancelled()) {
-            return ThreadStatus::error;
+            return ThreadStatus::Error;
         } else if ($this->future->done()) {
-            return ThreadStatus::finished;
+            return ThreadStatus::Finished;
         } else {
-            return ThreadStatus::running;
+            return ThreadStatus::Running;
         }
     }
 }
