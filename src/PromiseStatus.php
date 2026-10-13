@@ -4,7 +4,7 @@ namespace ByJG\PHPThread;
 
 enum PromiseStatus: string
 {
-    case pending = 'pending';
-    case fulfilled = 'fulfilled';
-    case rejected = 'rejected';
+    case Pending = 'pending';
+    case Fulfilled = 'fulfilled';
+    case Rejected = 'rejected';
 }

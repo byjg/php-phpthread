@@ -32,7 +32,7 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $x->await());
 
         // Test if the promise is fulfilled
-        $this->assertEquals(PromiseStatus::fulfilled, $x->getStatus());
+        $this->assertEquals(PromiseStatus::Fulfilled, $x->getStatus());
 
         // Test then
         $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 2)->await());
@@ -61,7 +61,7 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $x->await());
 
         // Test if the promise is rejected
-        $this->assertEquals(PromiseStatus::rejected, $x->getStatus());
+        $this->assertEquals(PromiseStatus::Rejected, $x->getStatus());
 
         // Test then
         $this->assertEquals(6, $x->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());

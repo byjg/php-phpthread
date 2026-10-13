@@ -4,8 +4,8 @@ namespace ByJG\PHPThread;
 
 enum ThreadStatus
 {
-    case notStarted;
-    case running;
-    case finished;
-    case error;
+    case NotStarted;
+    case Running;
+    case Finished;
+    case Error;
 }

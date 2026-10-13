@@ -213,9 +213,9 @@ class ForkHandler implements ThreadInterface
     public function getStatus(): ThreadStatus
     {
         if (empty($this->threadKey)) {
-            return ThreadStatus::notStarted;
+            return ThreadStatus::NotStarted;
         }
 
-        return $this->isRunning() ? ThreadStatus::running : ThreadStatus::finished;
+        return $this->isRunning() ? ThreadStatus::Running : ThreadStatus::Finished;
     }
 }
