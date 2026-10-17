@@ -44,3 +44,20 @@ $thread2->join();
 echo "Thread Result 1: " . $thread1->getResult();
 echo "Thread Result 2: " . $thread2->getResult();
 ```
+
+### Thread API
+
+`Thread::create(Closure $closure, ?Closure $onFinish = null)` returns a `ByJG\PHPThread\Handler\ThreadInterface`
+(`ForkHandler` or `ParallelHandler`). `$onFinish` is called inside the child process after the closure ends
+(fork handler only).
+
+| Method                                              | Description                                                                      |
+|-----------------------------------------------------|----------------------------------------------------------------------------------|
+| `start(mixed ...$args)`                             | Start the thread, passing the arguments to the closure                           |
+| `join()`                                            | Wait until the thread finishes                                                   |
+| `getResult()`                                       | The closure return value. If the closure threw an exception, it is re-thrown here |
+| `isRunning()`                                       | `true` while the thread is running                                               |
+| `getStatus()`                                       | A `ThreadStatus` enum: `NotStarted`, `Running`, `Finished` or `Error`            |
+| `terminate(int $signal = SIGKILL, bool $wait = false)` | Stop the thread                                                               |
+
+Call `Thread::gc()` at the end of the execution to remove the results left in the shared memory.

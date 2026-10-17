@@ -23,8 +23,10 @@ It also has a method `await()` that will wait for the promise to be fulfilled or
 
 use ByJG\PHPThread\Promise;
 
+$num = 7;
+
 // Create the Promise
-$promise = Promise::create(function ($resolve, $reject) {
+$promise = Promise::create(function ($resolve, $reject) use ($num) {
     sleep(3);
     if ($num >= 5) {
         $resolve("Promise is fulfilled!");
@@ -35,18 +37,18 @@ $promise = Promise::create(function ($resolve, $reject) {
 
 // After create the promise, the promise is executing in background
 // And the status is pending
-// We can attach a callback to the promise:
-$promise
+// We can attach a callback to the promise. `then()` returns a new promise:
+$then = $promise
     ->then(
         fn($resolve) => "Success: $resolve\n",
         fn($reject) => "Failure: $reject\n"
     );
 
-// Show the status of the promise:
-echo $promise->getStatus() . "\n";
+// Show the status of the promise (a PromiseStatus enum):
+echo $promise->getStatus()->value . "\n";
 
 // We wait for the promise to finish and get the result
-print_r($promise->await());
+print_r($then->await());
 ```
 
 The result of the code above is:

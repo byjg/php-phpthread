@@ -28,7 +28,7 @@ bridging the gap for a language that was not inherently designed for threading.
 4. [Features](#features)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
-7. [Dependencies](#dependencies)
+7. [Running Tests](#running-tests)
 
 ---
 
@@ -63,8 +63,8 @@ this method can approximate threading behavior.
 
 **Requirements:**
 
-- [pcntl](https://www.php.net/manual/en/book.pcntl.php): For process control.
-- [shmop](https://www.php.net/manual/en/book.shmop.php): For shared memory.
+- [pcntl](https://www.php.net/manual/en/book.pcntl.php) and [posix](https://www.php.net/manual/en/book.posix.php): For process control.
+- A tmpfs mounted at `/dev/shm`: For sharing results between processes.
 
 ---
 
@@ -77,7 +77,6 @@ all PHP distributions.
 **Requirements:**
 
 - [parallel](https://www.php.net/manual/en/book.parallel.php): For multi-threading functionality.
-- [shmop](https://www.php.net/manual/en/book.shmop.php): For memory sharing.
 
 ---
 
@@ -135,7 +134,7 @@ For web applications requiring asynchronous processing, consider using message q
 ### Forking and Data Sharing
 
 When simulating threads with `fork`, data cannot be returned directly from the child process
-to the parent. Use the `shmop` extension to share memory between processes.
+to the parent. The library serializes the results to the tmpfs filesystem (`/dev/shm`) to share them between processes.
 
 However:
 
@@ -150,14 +149,14 @@ However:
 #### Non-ZTS (Default PHP)
 
 - PHP ≥8.3
-- `pcntl` extension
-- `shmop` extension
+- `pcntl` and `posix` extensions
+- tmpfs mounted at `/dev/shm`
 
 #### ZTS (Zend Thread Safety)
 
 - PHP ≥8.3 compiled with `--enable-zts`
 - `parallel` extension
-- `shmop` extension (for Promises support)
+- `pcntl` and `posix` extensions (required by `composer.json`)
 
 ### Install via Composer
 
