@@ -16,6 +16,12 @@ the callback will be executed.
 
 It also has a method `await()` that will wait for the promise to be fulfilled or rejected.
 
+:::note
+In PHP-FPM (or any other non-CLI SAPI), or without `pcntl` and `parallel`, the promises still work but are not
+executed in background: the executor runs synchronously when the promise is created, so the promise is already
+settled when `Promise::create()` returns. See the `SyncHandler` in [Thread](thread.md#thread-api).
+:::
+
 ## Promises Example:
 
 ```php

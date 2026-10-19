@@ -6,7 +6,11 @@ sidebar_position: 5
 
 ## PHP-FPM
 
-PHP Threads is not supported in a PHP-FPM environment (nginx or apache).
+Threads do not run in parallel in a PHP-FPM environment (nginx or apache) or any other non-CLI SAPI, nor when
+neither `pcntl_fork()` nor the `parallel` extension is available. In that case `Thread::create()` returns a
+`SyncHandler`, which runs the closure synchronously in the current process: threads, thread pools and promises
+keep working and return the same results, but one task after another (no parallelism).
+`Thread::handlerClass()` tells which handler is used.
 
 ## Forking and Data Sharing between Threads
 

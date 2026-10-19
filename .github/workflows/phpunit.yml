@@ -41,17 +41,17 @@ jobs:
       - run: composer install
       - run: php tests/get_class_name.php
       - run: composer test
-      - name: Validate PHP-FPM. Threads should not work.
+      - name: Validate PHP-FPM. Threads fall back to synchronous execution.
         run: |
           apk add --no-cache curl
           echo "Ping"
           curl "http://nginx-php/ping" || true
           echo "Threads"
-          curl -s "http://nginx-php/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/thread" | grep '{"thr1":6,"thr2":3}'
           echo "Threadpool"
-          curl -s "http://nginx-php/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/threadpool" | grep '{"thr1":9,"thr2":6,"thr3":3}'
           echo "Promise"
-          curl -s "http://nginx-php/promise" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/promise" | grep '\[3\]'
 
   Build-zts:
     runs-on: 'ubuntu-latest'

@@ -47,10 +47,42 @@ echo "Thread Result 2: " . $thread2->getResult();
 
 ### Thread API
 
-`Thread::create(Closure $closure, ?Closure $onFinish = null)` returns a `ByJG\PHPThread\Handler\ThreadInterface`
-(`ForkHandler` or `ParallelHandler`). `$onFinish` is called inside the child process after the closure ends.
-It is supported by the fork handler only: when the `parallel` extension is loaded, `Thread::create()` returns a
-`ParallelHandler` and `$onFinish` is ignored (never called).
+`Thread::create(Closure $closure, ?Closure $onFinish = null)` returns a `ByJG\PHPThread\Handler\ThreadInterface`.
+The handler depends on the environment:
+
+| Handler           | When                                                              | Parallel |
+|-------------------|-------------------------------------------------------------------|----------|
+| `ParallelHandler` | CLI and the `parallel` extension is loaded (PHP ZTS)              | yes      |
+| `ForkHandler`     | CLI and `pcntl_fork()` is available                               | yes      |
+| `SyncHandler`     | Otherwise: PHP-FPM or any other web SAPI, or no `pcntl`/`parallel` | no       |
+
+`Thread::useHandler()` (below) overrides this choice.
+
+With the `SyncHandler` the closure runs synchronously in the current process when `start()` is called: `start()`
+returns only after the closure ends, `isRunning()` is always `false`, `join()` and `terminate()` do nothing, and
+`getStatus()` is `Finished`. The result (or the re-thrown exception) is the same as with the other handlers.
+
+`Thread::handlerClass()` returns the handler class `Thread::create()` uses, and `getClassName()` returns the
+class of a created thread.
+
+`Thread::useHandler(?string $handlerClass)` forces the handler `Thread::create()` uses (and so `ThreadPool` and
+`Promise`): `ParallelHandler::class`, `ForkHandler::class` or `SyncHandler::class`; any other class throws an
+`InvalidArgumentException`. `null` restores the automatic choice. A forced `ForkHandler` or `ParallelHandler`
+still throws when it cannot run (outside the CLI, or without `pcntl`/`parallel`). Forcing the `SyncHandler` is
+useful in tests or for a deterministic run, since everything runs one after another in the current process:
+
+```php
+use ByJG\PHPThread\Handler\SyncHandler;
+use ByJG\PHPThread\Thread;
+
+Thread::useHandler(SyncHandler::class);
+// ... Thread::create(), ThreadPool and Promise run synchronously here
+Thread::useHandler(null);
+```
+
+`$onFinish` is called with no argument after the closure ends (also when it throws): inside the child process
+with the `ForkHandler`, in the current process with the `SyncHandler`. When the `parallel` extension is loaded,
+`Thread::create()` returns a `ParallelHandler` and `$onFinish` is ignored (never called).
 
 | Method                                              | Description                                                                      |
 |-----------------------------------------------------|----------------------------------------------------------------------------------|

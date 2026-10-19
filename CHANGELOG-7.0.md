@@ -34,6 +34,32 @@ is a pure (non-backed) enum, so any code that names its cases has to be updated.
   and the returned promise resolved with whatever it returned. A callback declared with a required
   parameter (`fn($value) => ...`) now fails, since it is called with no argument; declare it without one.
 
+### Thread::create() no longer throws outside the CLI
+
+`Thread::create()` (and so `Promise` and `ThreadPool`) threw a `RuntimeException` ("Threads only works in CLI
+mode", or "PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl") under PHP-FPM or any
+other non-CLI SAPI, or without `pcntl_fork()` and `parallel`. It now returns a `SyncHandler` that runs the closure
+synchronously (see New Features). Code that caught that exception to detect an unsupported environment should
+check `Thread::handlerClass() === SyncHandler::class` instead. `ForkHandler` and `ParallelHandler` still throw
+when instantiated directly outside the CLI.
+
+## New Features
+
+### SyncHandler: synchronous fallback
+
+- New `ByJG\PHPThread\Handler\SyncHandler`: runs the closure in the current process when `start()` is called
+  and keeps its result, or the exception it threw, which `getResult()` re-throws on every call (as
+  `ForkHandler`). `isRunning()` is always `false`, `join()` and `terminate()` do nothing, `getStatus()` is
+  `NotStarted` before `start()` and `Finished` after it, and `$onFinish` is called after the closure.
+- `Thread::create()` picks the handler automatically: `ParallelHandler` in the CLI with the `parallel` extension,
+  `ForkHandler` in the CLI with `pcntl_fork()`, `SyncHandler` otherwise. Threads, thread pools and promises
+  therefore work under PHP-FPM, without parallelism.
+- New `Thread::handlerClass()` returns the handler class `Thread::create()` uses.
+- New `Thread::useHandler(?string $handlerClass)` forces the handler `Thread::create()` uses (`ParallelHandler`,
+  `ForkHandler` or `SyncHandler`; any other class throws `InvalidArgumentException`), e.g. `SyncHandler` in tests
+  or for a deterministic run; `null` restores the automatic choice. A forced `ForkHandler` or `ParallelHandler`
+  still throws when it cannot run. The promise and thread pool tests run with both `ForkHandler` and `SyncHandler`.
+
 ## Bug Fixes
 
 - `then()` with an `$onRejected` handler and `catch()` rejected the returned promise with the handler's
@@ -83,6 +109,8 @@ While 7.0 is unreleased these resolve to `7.0.x-dev` from each component's
 
 - The build matrix now includes PHP 8.6.
 - The Psalm job runs on PHP 8.5.
+- The PHP-FPM check expects the `/thread`, `/threadpool` and `/promise` endpoints to return their results
+  (computed by the `SyncHandler`) instead of the "Threads only works in CLI mode" error.
 
 ## Housekeeping
 

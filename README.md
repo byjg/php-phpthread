@@ -102,14 +102,34 @@ Supported Promise Methods:
 
 See also [Limitations](docs/limitations.md).
 
-### CLI Mode Only
+### Parallel Execution in CLI Mode Only
 
 :::caution Important
-This library **only works in CLI mode** (command-line interface). It **will NOT work** in web server environments such as:
+Threads **only run in parallel in CLI mode** (command-line interface). In web server environments such as:
 - PHP-FPM
 - Apache with mod_php
 - Any other web server SAPI
+
+or when neither `pcntl_fork()` nor the `parallel` extension is available, `Thread::create()` falls back to the
+`SyncHandler`: the closure runs **synchronously** in the current process when `start()` is called. The code keeps
+working (threads, thread pools and promises return the same results), but **there is no parallelism**: the work is
+done one task after another.
 :::
+
+To know which handler is used, call `Thread::handlerClass()` (the class `Thread::create()` returns in the current
+environment) or `getClassName()` on the created thread:
+
+```php
+use ByJG\PHPThread\Handler\SyncHandler;
+use ByJG\PHPThread\Thread;
+
+if (Thread::handlerClass() === SyncHandler::class) {
+    // No parallelism here: ForkHandler or ParallelHandler are not available
+}
+```
+
+`Thread::useHandler(SyncHandler::class)` forces the synchronous execution (e.g. in tests, or for a deterministic
+run), and `Thread::useHandler(null)` restores the automatic choice.
 
 **Why?**
 
@@ -129,7 +149,7 @@ This library is designed for:
 - Long-running CLI applications
 - Scheduled tasks (cron jobs)
 
-For web applications requiring asynchronous processing, consider using message queues (RabbitMQ, Redis, etc.) with background workers running in CLI mode.
+For web applications requiring real asynchronous processing, consider using message queues (RabbitMQ, Redis, etc.) with background workers running in CLI mode.
 
 ### Forking and Data Sharing
 

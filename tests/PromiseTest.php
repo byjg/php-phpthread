@@ -2,12 +2,27 @@
 
 namespace Tests;
 
+use ByJG\PHPThread\Handler\ForkHandler;
+use ByJG\PHPThread\Handler\SyncHandler;
 use ByJG\PHPThread\Promise;
 use ByJG\PHPThread\PromiseStatus;
+use ByJG\PHPThread\Thread;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Every scenario runs with the ForkHandler and with the SyncHandler fallback
+ */
 class PromiseTest extends TestCase
 {
+    public static function handlerProvider(): array
+    {
+        return [
+            'fork' => [ForkHandler::class],
+            'sync' => [SyncHandler::class],
+        ];
+    }
+
     #[\Override]
     public function setUp(): void
     {
@@ -19,11 +34,15 @@ class PromiseTest extends TestCase
     #[\Override]
     public function tearDown(): void
     {
+        Thread::useHandler(null);
         Promise::gc();
     }
 
-    public function testPromiseFulfilled()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseFulfilled(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $x = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -39,8 +58,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(11, $x->then(fn($resolve) => $resolve + 10)->await());
     }
 
-    public function testPromiseFulfilledSequence()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseFulfilledSequence(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $result = Promise::create(function ($resolve, $reject) {
             $resolve(1);
         })
@@ -51,8 +73,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(13, $result);
     }
 
-    public function testPromiseRejected()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseRejected(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $x = new Promise(function ($resolve, $reject) {
             $reject(1);
         });
@@ -68,8 +93,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)->await());
     }
 
-    public function testPromiseRejectedSequence()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseRejectedSequence(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $result = Promise::create(function ($resolve, $reject) {
             $reject(1);
         })
@@ -81,8 +109,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(16, $result);
     }
 
-    public function testAllFulfilled()
+    #[DataProvider('handlerProvider')]
+    public function testAllFulfilled(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise1 = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -100,8 +131,11 @@ class PromiseTest extends TestCase
         $this->assertEquals([1, 2, 3], $result);
     }
 
-    public function testAllReject()
+    #[DataProvider('handlerProvider')]
+    public function testAllReject(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise1 = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -123,8 +157,11 @@ class PromiseTest extends TestCase
         $this->assertEquals("Reason: 2", $result);
     }
 
-    public function testAllFulfilledCatch()
+    #[DataProvider('handlerProvider')]
+    public function testAllFulfilledCatch(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise1 = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -145,8 +182,11 @@ class PromiseTest extends TestCase
         $this->assertEquals([1, 2, 3], $result);
     }
 
-    public function testAllRejectCatch()
+    #[DataProvider('handlerProvider')]
+    public function testAllRejectCatch(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise1 = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -167,8 +207,22 @@ class PromiseTest extends TestCase
         $this->assertEquals("Reason: 2", $result);
     }
 
-    public function testRaceFulfilled()
+    public static function raceProvider(): array
     {
+        return [
+            // promise2 settles first, while promise1 and promise3 sleep in their own processes
+            'fork' => [ForkHandler::class, 2],
+            // Each executor runs to the end when its promise is created, so all three are already
+            // settled when race() runs and the first one in the list wins, as in JavaScript
+            'sync' => [SyncHandler::class, 1],
+        ];
+    }
+
+    #[DataProvider('raceProvider')]
+    public function testRaceFulfilled(string $handlerClass, int $expected)
+    {
+        Thread::useHandler($handlerClass);
+
         $promise1 = new Promise(function ($resolve, $reject) {
             sleep(1);
             $resolve(1);
@@ -185,12 +239,15 @@ class PromiseTest extends TestCase
 
         $result = Promise::race($promise1, $promise2, $promise3)->await();
 
-        $this->assertEquals(2, $result);
+        $this->assertEquals($expected, $result);
 
     }
 
-    public function testPromiseException()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseException(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             throw new \Exception('Error Message');
         });
@@ -200,8 +257,11 @@ class PromiseTest extends TestCase
         $this->assertEquals('Error Message', $result->getMessage());
     }
 
-    public function testPromiseException2()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseException2(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             throw new \Exception('Error Message 2');
         });
@@ -214,8 +274,11 @@ class PromiseTest extends TestCase
         $this->assertEquals('Error Message 2', $result);
     }
 
-    public function testPromiseException3()
+    #[DataProvider('handlerProvider')]
+    public function testPromiseException3(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -227,32 +290,47 @@ class PromiseTest extends TestCase
         $this->assertEquals('Error Message 3', $result->getMessage());
     }
 
-    public function testResolve()
+    #[DataProvider('handlerProvider')]
+    public function testResolve(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::resolve(1);
         $this->assertEquals(1, $promise->await());
     }
 
-    public function testResolveThen()
+    #[DataProvider('handlerProvider')]
+    public function testResolveThen(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::resolve(1);
         $this->assertEquals(3, $promise->then(fn($resolve) => $resolve + 2)->await());
     }
 
-    public function testReject()
+    #[DataProvider('handlerProvider')]
+    public function testReject(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(1);
         $this->assertEquals(1, $promise->await());
     }
 
-    public function testRejectThen()
+    #[DataProvider('handlerProvider')]
+    public function testRejectThen(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(1);
         $this->assertEquals(6, $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
     }
 
-    public function testCatch()
+    #[DataProvider('handlerProvider')]
+    public function testCatch(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             throw new \Exception('Error Message 2');
         });
@@ -265,8 +343,11 @@ class PromiseTest extends TestCase
         $this->assertEquals('Error Message 2', $result);
     }
 
-    public function testFulfilledCatch()
+    #[DataProvider('handlerProvider')]
+    public function testFulfilledCatch(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -279,8 +360,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $result);
     }
 
-    public function testFinally()
+    #[DataProvider('handlerProvider')]
+    public function testFinally(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             $resolve(1);
         });
@@ -295,8 +379,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(1, $result);
     }
 
-    public function testFinallyReject()
+    #[DataProvider('handlerProvider')]
+    public function testFinallyReject(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = new Promise(function ($resolve, $reject) {
             $reject(1);
         });
@@ -311,8 +398,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(101, $result);
     }
 
-    public function testCatchRecovers()
+    #[DataProvider('handlerProvider')]
+    public function testCatchRecovers(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(1)
             ->catch(fn($reason) => $reason + 100)
             ->then(fn($value) => $value + 10, fn($reason) => "Rejected: $reason");
@@ -321,8 +411,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
     }
 
-    public function testThenOnRejectedRecovers()
+    #[DataProvider('handlerProvider')]
+    public function testThenOnRejectedRecovers(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(1)
             ->then(fn($value) => $value, fn($reason) => $reason + 5);
 
@@ -330,8 +423,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
     }
 
-    public function testCatchThrowingRejects()
+    #[DataProvider('handlerProvider')]
+    public function testCatchThrowingRejects(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(1)
             ->catch(fn($reason) => throw new \Exception("Handler failed: $reason"));
 
@@ -340,8 +436,11 @@ class PromiseTest extends TestCase
         $this->assertEquals('Handler failed: 1', $result->getMessage());
     }
 
-    public function testFinallyPassesValueThrough()
+    #[DataProvider('handlerProvider')]
+    public function testFinallyPassesValueThrough(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::resolve(5)
             ->finally(function (...$args) {
                 // The callback receives no argument
@@ -355,8 +454,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
     }
 
-    public function testFinallyKeepsRejection()
+    #[DataProvider('handlerProvider')]
+    public function testFinallyKeepsRejection(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::reject(7)
             ->finally(fn() => 99);
 
@@ -364,8 +466,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
     }
 
-    public function testErrorInHandlerRejects()
+    #[DataProvider('handlerProvider')]
+    public function testErrorInHandlerRejects(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::resolve(5)
             ->then(fn($value) => $value->notAnObject());
 
@@ -374,8 +479,11 @@ class PromiseTest extends TestCase
         $this->assertInstanceOf(\Error::class, $result);
     }
 
-    public function testFinallyWithArgumentRejectsAndCatchRecovers()
+    #[DataProvider('handlerProvider')]
+    public function testFinallyWithArgumentRejectsAndCatchRecovers(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         // finally() calls its callback with no argument: an old fn($value) throws ArgumentCountError
         $promise = Promise::resolve(5)
             ->finally(fn($value) => $value)
@@ -385,8 +493,11 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
     }
 
-    public function testFinallyThrowingRejects()
+    #[DataProvider('handlerProvider')]
+    public function testFinallyThrowingRejects(string $handlerClass)
     {
+        Thread::useHandler($handlerClass);
+
         $promise = Promise::resolve(5)
             ->finally(fn() => throw new \Exception('Finally failed'));
 
