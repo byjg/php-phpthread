@@ -41,7 +41,14 @@ class Promise implements PromiseInterface
         $promiseId = $this->promiseId;
         $fn = function () use ($executor, $promiseId) {
             $resolve = function ($value = null) use ($promiseId) {
-                SharedMemory::getInstance()->set($promiseId, new PromiseResult($value, PromiseStatus::Fulfilled));
+                if ($value instanceof PromiseInterface) {
+                    // A promise is followed, as in JavaScript: a promise cannot be shared between threads,
+                    // so this thread waits for it and settles with its value or reason
+                    $value = new PromiseResult($value->await(), $value->getStatus());
+                } else {
+                    $value = new PromiseResult($value, PromiseStatus::Fulfilled);
+                }
+                SharedMemory::getInstance()->set($promiseId, $value);
             };
 
             $reject = function ($value = null) use ($promiseId) {
@@ -68,6 +75,18 @@ class Promise implements PromiseInterface
     public static function create(Closure $promise): PromiseInterface
     {
         return new Promise($promise);
+    }
+
+    /**
+     * Run the closure with the arguments in a thread: the promise is fulfilled with its return value
+     * (a returned promise is followed) or rejected with what it throws, as the JavaScript Promise.try().
+     * The arguments and the return value must be serializable.
+     */
+    public static function try(Closure $closure, mixed ...$args): PromiseInterface
+    {
+        return new Promise(function ($resolve) use ($closure, $args) {
+            $resolve($closure(...$args));
+        });
     }
 
     public static function resolve($value): PromiseInterface

@@ -608,4 +608,104 @@ class PromiseTest extends TestCase
         $this->assertInstanceOf(\RuntimeException::class, $all->await());
         $this->assertEquals(PromiseStatus::Rejected, $all->getStatus());
     }
+
+    #[DataProvider('handlerProvider')]
+    public function testTry(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::try(fn(int $a, int $b) => [$a + $b, getmypid()], 2, 3);
+
+        [$sum, $pid] = $promise->await();
+        $this->assertEquals(5, $sum);
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+        if ($handlerClass === SyncHandler::class) {
+            $this->assertEquals(getmypid(), $pid);
+        } else {
+            // It ran in the background
+            $this->assertNotEquals(getmypid(), $pid);
+        }
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testTryRejectsWhatItThrows(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::try(fn() => throw new \InvalidArgumentException('Invalid'));
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertInstanceOf(\InvalidArgumentException::class, $result);
+        $this->assertEquals('Invalid', $result->getMessage());
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testThenReturningAPromiseIsFollowed(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::resolve(1)
+            ->then(fn($value) => Promise::try(fn() => $value + 1))
+            ->then(fn($value) => $value * 10);
+
+        $this->assertEquals(20, $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testReturningARejectedPromiseRejects(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::resolve(1)
+            ->then(fn($value) => Promise::reject("rejected $value"));
+
+        $this->assertEquals('rejected 1', $promise->await());
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+
+        // The rejection reaches the next onRejected handler
+        $this->assertEquals('handled rejected 1', $promise->catch(fn($reason) => "handled $reason")->await());
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testNestedPromisesAreFollowed(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::try(
+            fn() => Promise::try(fn() => Promise::try(fn() => 'deep'))
+        );
+
+        $this->assertEquals('deep', $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testExecutorResolvingWithAPromise(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = new Promise(function ($resolve) {
+            $resolve(Promise::try(fn() => 'from the inner promise'));
+        });
+
+        $this->assertEquals('from the inner promise', $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    #[DataProvider('parallelHandlerProvider')]
+    public function testFollowingWaitsForTheInnerPromise(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::try(fn() => Promise::try(function () {
+            usleep(300_000);
+            return 'slow';
+        }));
+
+        // Still pending while the inner promise runs
+        $this->assertEquals(PromiseStatus::Pending, $promise->getStatus());
+        $this->assertEquals('slow', $promise->await());
+    }
 }

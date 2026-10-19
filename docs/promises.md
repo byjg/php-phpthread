@@ -98,6 +98,7 @@ $promise->then(
   first callback.
 - The promise is rejected and no second callback is given: the new promise rejects with the same reason.
 - A callback throws an exception or a PHP `Error` (e.g. `TypeError`): the new promise rejects with it.
+- A callback returns a promise: the new promise follows it, and settles with its value or reason.
 
 ```php
 <?php
@@ -106,6 +107,23 @@ Promise::reject(1)
     ->then(fn($value) => $value + 10, fn($reason) => $reason + 2)  // fulfilled: 6 + 10
     ->await();  // 16
 ```
+
+### Returning a promise
+
+As in JavaScript, a promise returned by a `then()`/`catch()` callback or by `Promise::try()`, or passed to `$resolve`
+in an executor, is followed: the promise settles when that promise settles, with its value or reason.
+
+```php
+<?php
+Promise::resolve(1)
+    ->then(fn($id) => Promise::try(fn() => loadUser($id)))   // another task in background
+    ->then(fn($user) => $user['name'])                       // gets the user, not the promise
+    ->await();
+```
+
+A promise cannot be passed between threads, so the thread of the outer promise waits for the inner one and keeps
+running (one more process or thread) until it settles. If the returned promise was created outside the callback and
+captured by it, its thread dying is not detected from there: create the promise inside the callback.
 
 ### Catch method
 
@@ -145,6 +163,26 @@ Promise::reject(7)->finally(fn() => 99)->await();               // still rejecte
 ```
 
 ## Promise Static Methods
+
+### Try method
+
+`Promise::try(Closure $closure, mixed ...$args)` runs the closure with the arguments in background: the promise is
+fulfilled with its return value or rejected with what it throws, as `Promise.try()` in JavaScript. It is a shorter
+way to write an executor that only resolves.
+
+```php
+<?php
+$promise = Promise::try(fn(int $a, int $b) => $a + $b, 2, 3);
+$promise->await();  // 5
+
+// The same as
+$promise = new Promise(function ($resolve) {
+    $resolve(2 + 3);
+});
+```
+
+The arguments and the return value must be serializable. A returned promise is followed (see
+[Returning a promise](#returning-a-promise)).
 
 ### Resolve method
 

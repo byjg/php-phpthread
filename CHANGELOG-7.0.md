@@ -56,6 +56,19 @@ An executor that returns without calling `$resolve` or `$reject` now rejects the
 
 ## New Features
 
+### Promise::try()
+
+- `Promise::try(Closure $closure, mixed ...$args)` runs the closure in a thread and returns a promise fulfilled with
+  its return value or rejected with what it throws, as `Promise.try()` in JavaScript. See `docs/promises.md`.
+
+### A returned promise is followed
+
+- A promise returned by a `then()`/`catch()` callback or by `Promise::try()`, or passed to `$resolve`, is followed as
+  in JavaScript: the promise settles with its value or reason. The thread waits for the inner promise, since a
+  promise cannot be shared between threads. Before, the promise could not be stored in the shared memory and the
+  outer promise ended rejected ("The thread ended without settling the promise"). See `docs/promises.md`
+  (Returning a promise).
+
 ### SyncHandler: synchronous fallback
 
 - New `ByJG\PHPThread\Handler\SyncHandler`: runs the closure in the current process when `start()` is called
