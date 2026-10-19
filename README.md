@@ -88,9 +88,9 @@ all PHP distributions.
 
 Supported Promise Methods:
 
-- `then()`: Execute a callback on promise resolution.
-- `catch()`: Execute a callback on promise rejection.
-- `finally()`: Execute a callback after resolution or rejection.
+- `then()`: Execute a callback on promise resolution (and, optionally, on rejection).
+- `catch()`: Execute a callback on promise rejection; the returned promise resolves with its return value.
+- `finally()`: Execute a callback after resolution or rejection; the original value or reason is passed through.
 - `Promise::resolve()`: Resolve a promise.
 - `Promise::reject()`: Reject a promise.
 - `Promise::all()`: Wait for all promises to resolve.

@@ -77,7 +77,8 @@ class PromiseTest extends TestCase
             ->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)
             ->await();
 
-        $this->assertEquals(8, $result);
+        // The first onRejected handles the rejection, so the chain continues fulfilled: 1 + 5 + 10
+        $this->assertEquals(16, $result);
     }
 
     public function testAllFulfilled()
@@ -287,10 +288,11 @@ class PromiseTest extends TestCase
         $result = $promise
             ->then(fn($resolve) => $resolve)
             ->catch(fn($reject) => $reject + 100)
-            ->finally(fn($valie) => 2 + $valie)
+            ->finally(fn() => 2)
             ->await();
 
-        $this->assertEquals(3, $result);
+        // finally's return value is ignored
+        $this->assertEquals(1, $result);
     }
 
     public function testFinallyReject()
@@ -302,9 +304,94 @@ class PromiseTest extends TestCase
         $result = $promise
             ->then(fn($resolve) => $resolve)
             ->catch(fn($reject) => $reject + 100)
-            ->finally(fn($valie) => 2 + $valie)
+            ->finally(fn() => 2)
             ->await();
 
-        $this->assertEquals(103, $result);
+        // catch recovers with 101, finally passes it through
+        $this->assertEquals(101, $result);
+    }
+
+    public function testCatchRecovers()
+    {
+        $promise = Promise::reject(1)
+            ->catch(fn($reason) => $reason + 100)
+            ->then(fn($value) => $value + 10, fn($reason) => "Rejected: $reason");
+
+        $this->assertEquals(111, $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    public function testThenOnRejectedRecovers()
+    {
+        $promise = Promise::reject(1)
+            ->then(fn($value) => $value, fn($reason) => $reason + 5);
+
+        $this->assertEquals(6, $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    public function testCatchThrowingRejects()
+    {
+        $promise = Promise::reject(1)
+            ->catch(fn($reason) => throw new \Exception("Handler failed: $reason"));
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertEquals('Handler failed: 1', $result->getMessage());
+    }
+
+    public function testFinallyPassesValueThrough()
+    {
+        $promise = Promise::resolve(5)
+            ->finally(function (...$args) {
+                // The callback receives no argument
+                if (count($args) !== 0) {
+                    throw new \Exception('finally received ' . count($args) . ' argument(s)');
+                }
+                return 99;
+            });
+
+        $this->assertEquals(5, $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    public function testFinallyKeepsRejection()
+    {
+        $promise = Promise::reject(7)
+            ->finally(fn() => 99);
+
+        $this->assertEquals(7, $promise->await());
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+    }
+
+    public function testErrorInHandlerRejects()
+    {
+        $promise = Promise::resolve(5)
+            ->then(fn($value) => $value->notAnObject());
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertInstanceOf(\Error::class, $result);
+    }
+
+    public function testFinallyWithArgumentRejectsAndCatchRecovers()
+    {
+        // finally() calls its callback with no argument: an old fn($value) throws ArgumentCountError
+        $promise = Promise::resolve(5)
+            ->finally(fn($value) => $value)
+            ->catch(fn($error) => get_class($error));
+
+        $this->assertEquals(\ArgumentCountError::class, $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    public function testFinallyThrowingRejects()
+    {
+        $promise = Promise::resolve(5)
+            ->finally(fn() => throw new \Exception('Finally failed'));
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertEquals('Finally failed', $result->getMessage());
     }
 }

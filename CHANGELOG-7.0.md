@@ -17,6 +17,40 @@ is a pure (non-backed) enum, so any code that names its cases has to be updated.
 | `PromiseStatus` | `pending`, `fulfilled`, `rejected` | `Pending`, `Fulfilled`, `Rejected` |
 | `ThreadStatus` | `notStarted`, `running`, `finished`, `error` | `NotStarted`, `Running`, `Finished`, `Error` |
 
+### ForkHandler keeps its state after getResult()
+
+`ForkHandler::getStatus()` returns `Finished` after `getResult()`, not `NotStarted`, and a second
+`getResult()` returns (or re-throws) the result instead of `null` (see Bug Fixes).
+
+### Promise then/catch/finally follow JavaScript
+
+- A rejection handled by `then($onFulfilled, $onRejected)` or `catch($onRejected)` now **resolves** the
+  returned promise with the handler's return value, so the chain continues on the fulfilled path. Before,
+  the returned promise was rejected again with that value: `Promise::reject(1)->then(fn($v) => $v + 2,
+  fn($r) => $r + 5)->then(fn($v) => $v + 10, fn($r) => $r + 2)` gave `8`, it gives `16` now. To keep a
+  promise rejected from a handler, throw an exception in it.
+- `finally($onFinally)` calls the callback with no argument and ignores its return value; the returned
+  promise settles with the original value or reason. Before, the callback received the value (or reason)
+  and the returned promise resolved with whatever it returned. A callback declared with a required
+  parameter (`fn($value) => ...`) now fails, since it is called with no argument; declare it without one.
+
+## Bug Fixes
+
+- `then()` with an `$onRejected` handler and `catch()` rejected the returned promise with the handler's
+  return value instead of resolving it, so a handled rejection could not be recovered from; and
+  `finally()` replaced the promise's value or reason with the callback's return value, and turned a
+  rejected promise into a fulfilled one. Both now follow the JavaScript Promise semantics (see Breaking
+  Changes). A handler or `finally` callback that throws rejects the returned promise with that exception.
+
+- `ForkHandler::getResult()` cleared the thread key, so the thread looked as if it had never been
+  started: `getStatus()` returned `NotStarted` and every later `getResult()` returned `null`. The
+  result is now read from the shared memory once and kept; `start()` clears it for the next run.
+
+- A PHP `Error` (`TypeError`, `ArgumentCountError`, a call on a non-object, ...) thrown by an executor or
+  a callback was not caught, so the promise never settled: `await()` threw "Promise result is null" and
+  anything chained after it never returned. It now rejects the promise, like an exception. A `finally()`
+  callback still written as `fn($value) => ...` gets no argument and rejects with `ArgumentCountError`.
+
 ## Requirements
 
 - PHP 8.3, 8.4, 8.5 and 8.6 are now supported: `"php": ">=8.3 <8.7"`.

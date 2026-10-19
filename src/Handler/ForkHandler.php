@@ -27,6 +27,7 @@ class ForkHandler implements ThreadInterface
     private int $pid;
 
     private mixed $threadResult = null;
+    private bool $resultRead = false;
 
     private ?Closure $onFinish = null;
 
@@ -72,6 +73,8 @@ class ForkHandler implements ThreadInterface
     public function start(mixed ...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
+        $this->threadResult = null;
+        $this->resultRead = false;
 
         if (($this->pid = pcntl_fork()) == -1) {
             throw new RuntimeException('Couldn\'t fork the process');
@@ -117,7 +120,8 @@ class ForkHandler implements ThreadInterface
     }
 
     /**
-     * Get the thread result from the shared memory block and erase it
+     * Get the thread result from the shared memory block and erase it.
+     * The result is kept, so later calls return it (or re-throw it) again.
      *
      * @return mixed
      * @throws ContainerExceptionInterface
@@ -132,15 +136,11 @@ class ForkHandler implements ThreadInterface
             return null;
         }
 
-        if (!empty($this->threadResult)) {
-            return $this->threadResult;
+        if (!$this->resultRead) {
+            $this->threadResult = SharedMemory::getInstance()->get($this->threadKey);
+            SharedMemory::getInstance()->delete($this->threadKey);
+            $this->resultRead = true;
         }
-
-        $key = $this->threadKey;
-        $this->threadKey = null;
-
-        $this->threadResult = SharedMemory::getInstance()->get($key);
-        SharedMemory::getInstance()->delete($key);
 
         if ($this->threadResult instanceof Throwable) {
             throw $this->threadResult;

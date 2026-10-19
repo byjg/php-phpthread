@@ -75,6 +75,23 @@ $promise->then(
 );
 ```
 
+`then()` returns a new promise, with the same rules as JavaScript:
+
+- The promise is fulfilled: it resolves with the return value of the first callback.
+- The promise is rejected and a second callback is given: the rejection is handled, and the new promise
+  **resolves** with the return value of that callback. The next `then()` in the chain gets that value in its
+  first callback.
+- The promise is rejected and no second callback is given: the new promise rejects with the same reason.
+- A callback throws an exception or a PHP `Error` (e.g. `TypeError`): the new promise rejects with it.
+
+```php
+<?php
+Promise::reject(1)
+    ->then(fn($value) => $value + 2, fn($reason) => $reason + 5)   // handled: resolves with 6
+    ->then(fn($value) => $value + 10, fn($reason) => $reason + 2)  // fulfilled: 6 + 10
+    ->await();  // 16
+```
+
 ### Catch method
 
 The `catch` method is used to attach a callback to the promise. The callback will be executed when the promise is
@@ -85,14 +102,31 @@ rejected.
 $promise->catch(fn($reject) => "Failure: $reject\n");
 ```
 
+`catch($onRejected)` is the same as `then(fn($value) => $value, $onRejected)`: a fulfilled promise passes its
+value through, and a rejection handled by the callback **resolves** the returned promise with the callback's
+return value. If the callback throws, the returned promise rejects with that exception.
+
+```php
+<?php
+Promise::reject(1)
+    ->catch(fn($reason) => $reason + 100)  // recovers: resolves with 101
+    ->then(fn($value) => $value + 10)
+    ->await();  // 111
+```
+
 ### Finally method
 
 The `finally` method is used to attach a callback to the promise. The callback will be executed when the promise is
 resolved or rejected.
 
+As in JavaScript, the callback receives **no argument** and its return value is ignored. The returned promise settles
+with the original value or reason: a fulfilled promise stays fulfilled with the same value, and a rejected promise stays
+rejected with the same reason. If the callback throws, the returned promise rejects with that exception.
+
 ```php
 <?php
-$promise->finally(fn($result) => "Finally: $result\n");
+Promise::resolve(5)->finally(fn() => print("Done\n"))->await();  // prints "Done", returns 5
+Promise::reject(7)->finally(fn() => 99)->await();               // still rejected, returns 7
 ```
 
 ## Promise Static Methods

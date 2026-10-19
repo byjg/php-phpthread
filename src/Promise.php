@@ -5,7 +5,7 @@ namespace ByJG\PHPThread;
 use ByJG\Cache\Exception\InvalidArgumentException;
 use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
-use Exception;
+use Throwable;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -34,7 +34,8 @@ class Promise implements PromiseInterface
 
             try {
                 $executor($resolve, $reject);
-            } catch (Exception $ex) {
+            } catch (Throwable $ex) {
+                // An Error (TypeError, ArgumentCountError, ...) rejects the promise too, as in JavaScript
                 $reject($ex);
             }
         };
@@ -122,29 +123,37 @@ class Promise implements PromiseInterface
     }
 
     /**
+     * Wait until this promise settles and return its result.
+     */
+    protected function waitResult(): PromiseResult
+    {
+        $status = $this->getStatus();
+        while ($status === PromiseStatus::Pending) {
+            $status = $this->getStatus();
+        }
+        $result = $this->getResult();
+        if ($result === null) {
+            throw new \RuntimeException('Promise result is null');
+        }
+        return $result;
+    }
+
+    /**
      * @inheritDoc
      */
     #[\Override]
     public function then(Closure $onFulfilled, ?Closure $onRejected = null): PromiseInterface
     {
         $then = function ($resolve, $reject) use ($onFulfilled, $onRejected) {
-            $status = $this->getStatus();
-            while ($status === PromiseStatus::Pending) {
-                $status = $this->getStatus();
-            }
-            $result = $this->getResult();
-            if ($result === null) {
-                throw new \RuntimeException('Promise result is null');
-            }
+            $result = $this->waitResult();
             $args = $result->getResult();
-            if ($status === PromiseStatus::Fulfilled) {
+            if ($result->getStatus() === PromiseStatus::Fulfilled) {
                 $resolve($onFulfilled($args));
-            } else if ($status === PromiseStatus::Rejected) {
-                if ($onRejected) {
-                    $reject($onRejected($args));
-                } else {
-                    $reject($args);
-                }
+            } else if ($onRejected) {
+                // As in JavaScript, a handled rejection resolves the returned promise
+                $resolve($onRejected($args));
+            } else {
+                $reject($args);
             }
         };
 
@@ -157,7 +166,7 @@ class Promise implements PromiseInterface
     #[\Override]
     public function catch(Closure $onRejected): PromiseInterface
     {
-        return $this->then(fn($resolve) => $resolve, $onRejected);
+        return $this->then(fn($value) => $value, $onRejected);
     }
 
     /**
@@ -166,10 +175,17 @@ class Promise implements PromiseInterface
     #[\Override]
     public function finally(Closure $onFinally): PromiseInterface
     {
-        return $this->then(
-            fn($value) => $onFinally($value),
-            fn($reason) => $onFinally($reason)
-        );
+        return new Promise(function ($resolve, $reject) use ($onFinally) {
+            $result = $this->waitResult();
+            // As in JavaScript, the callback gets no argument and its return value is ignored:
+            // the returned promise settles with the original value or reason
+            $onFinally();
+            if ($result->getStatus() === PromiseStatus::Fulfilled) {
+                $resolve($result->getResult());
+            } else {
+                $reject($result->getResult());
+            }
+        });
     }
 
     /**
