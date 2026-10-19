@@ -18,18 +18,34 @@ class Promise implements PromiseInterface
     protected ?PromiseResult $result = null;
     protected string $promiseId;
 
+    /**
+     * The process that started the thread: only it can tell that the thread ended
+     * (a forked or a child process has a copy of this promise)
+     */
+    protected int $ownerPid;
+
+    /**
+     * The promises this one waits for (then, catch, finally, all, race)
+     * @var PromiseInterface[]
+     */
+    protected array $dependencies = [];
+
     public function __construct(Closure $executor)
     {
         SharedMemory::getInstance();
         $this->promiseId = "p_" . bin2hex(random_bytes(16));
+        $this->ownerPid = (int)getmypid();
 
-        $fn = function () use ($executor) {
-            $resolve = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::Fulfilled));
+        // The id is captured by value: ProcessHandler serializes this closure, and laravel/serializable-closure
+        // does not bind $this when it is used only inside a nested closure
+        $promiseId = $this->promiseId;
+        $fn = function () use ($executor, $promiseId) {
+            $resolve = function ($value = null) use ($promiseId) {
+                SharedMemory::getInstance()->set($promiseId, new PromiseResult($value, PromiseStatus::Fulfilled));
             };
 
-            $reject = function ($value = null) {
-                SharedMemory::getInstance()->set($this->promiseId, new PromiseResult($value, PromiseStatus::Rejected));
+            $reject = function ($value = null) use ($promiseId) {
+                SharedMemory::getInstance()->set($promiseId, new PromiseResult($value, PromiseStatus::Rejected));
             };
 
             try {
@@ -82,14 +98,37 @@ class Promise implements PromiseInterface
             return $this->result;
         }
 
+        // Checked before reading the result: a thread that settles the promise and ends in between
+        // must not be taken as one that ended without settling it
+        $threadEnded = $this->ownerPid === getmypid() && $this->thread->getStatus() !== ThreadStatus::Running;
+
         $result = SharedMemory::getInstance()->get($this->promiseId);
         if (!empty($result)) {
             $this->result = $result;
-        } else {
-            return null;
+        } elseif ($threadEnded) {
+            // The thread died (fatal error, exit, killed) or the executor never called $resolve or $reject:
+            // nothing can settle the promise anymore. The rejection is shared with the promises chained in
+            // other processes, which wait for this result.
+            $this->result = new PromiseResult($this->threadEndedReason(), PromiseStatus::Rejected);
+            SharedMemory::getInstance()->set($this->promiseId, $this->result);
         }
 
         return $this->result;
+    }
+
+    /**
+     * The reason of a thread that ended without settling the promise
+     */
+    protected function threadEndedReason(): Throwable
+    {
+        try {
+            // e.g. ProcessHandler: "The PHP process ended without a result (exit code 255)"
+            $this->thread->getResult();
+        } catch (Throwable $ex) {
+            return $ex;
+        }
+
+        return new \RuntimeException('The thread ended without settling the promise ' . $this->promiseId);
     }
 
     /**
@@ -103,6 +142,11 @@ class Promise implements PromiseInterface
     public function getStatus(): PromiseStatus
     {
         if ($this->thread->getStatus() === ThreadStatus::Running) {
+            // The thread may wait for a promise whose thread ended without settling it,
+            // which only this process can reject
+            foreach ($this->dependencies as $dependency) {
+                $dependency->getStatus();
+            }
             return PromiseStatus::Pending;
         }
 
@@ -127,9 +171,8 @@ class Promise implements PromiseInterface
      */
     protected function waitResult(): PromiseResult
     {
-        $status = $this->getStatus();
-        while ($status === PromiseStatus::Pending) {
-            $status = $this->getStatus();
+        while ($this->getStatus() === PromiseStatus::Pending) {
+            usleep(1000);
         }
         $result = $this->getResult();
         if ($result === null) {
@@ -157,7 +200,16 @@ class Promise implements PromiseInterface
             }
         };
 
-        return new Promise($then);
+        return self::waitingFor(new Promise($then), [$this]);
+    }
+
+    /**
+     * @param PromiseInterface[] $dependencies
+     */
+    protected static function waitingFor(Promise $promise, array $dependencies): Promise
+    {
+        $promise->dependencies = $dependencies;
+        return $promise;
     }
 
     /**
@@ -175,7 +227,7 @@ class Promise implements PromiseInterface
     #[\Override]
     public function finally(Closure $onFinally): PromiseInterface
     {
-        return new Promise(function ($resolve, $reject) use ($onFinally) {
+        return self::waitingFor(new Promise(function ($resolve, $reject) use ($onFinally) {
             $result = $this->waitResult();
             // As in JavaScript, the callback gets no argument and its return value is ignored:
             // the returned promise settles with the original value or reason
@@ -185,7 +237,7 @@ class Promise implements PromiseInterface
             } else {
                 $reject($result->getResult());
             }
-        });
+        }), [$this]);
     }
 
     /**
@@ -198,17 +250,12 @@ class Promise implements PromiseInterface
     #[\Override]
     public function await(): mixed
     {
-        $this->thread->join();
-        $x = $this->getResult();
-        if (is_null($x)) {
-            throw new \RuntimeException('Promise result is null for promise: ' . $this->getPromiseId());
-        }
-        return $x->getResult();
+        return $this->waitResult()->getResult();
     }
 
     public static function all(PromiseInterface ...$promises): PromiseInterface
     {
-        return new Promise(function ($resolve, $reject) use ($promises) {
+        return self::waitingFor(new Promise(function ($resolve, $reject) use ($promises) {
             $results = [];
             while (count($promises) > 0) {
                 foreach ($promises as $key => $promise) {
@@ -225,18 +272,20 @@ class Promise implements PromiseInterface
                         if ($result === null) {
                             throw new \RuntimeException('Promise result is null');
                         }
-                        $results[] = $result->getResult();
+                        $results[$key] = $result->getResult();
                         unset($promises[$key]);
                     }
                 }
             }
+            // The results follow the order of the promises, not the order they settle
+            ksort($results);
             $resolve($results);
-        });
+        }), $promises);
     }
 
     public static function race(PromiseInterface ...$promises): PromiseInterface
     {
-        return new Promise(function ($resolve, $reject) use ($promises) {
+        return self::waitingFor(new Promise(function ($resolve, $reject) use ($promises) {
             while (count($promises) > 0) {
                 foreach ($promises as $promise) {
                     if ($promise->getStatus() === PromiseStatus::Rejected) {
@@ -257,7 +306,7 @@ class Promise implements PromiseInterface
                     }
                 }
             }
-        });
+        }), $promises);
     }
 
     /**

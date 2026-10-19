@@ -38,10 +38,21 @@ is a pure (non-backed) enum, so any code that names its cases has to be updated.
 
 `Thread::create()` (and so `Promise` and `ThreadPool`) threw a `RuntimeException` ("Threads only works in CLI
 mode", or "PHP need to be compiled with ZTS extension or compiled with the --enable-pcntl") under PHP-FPM or any
-other non-CLI SAPI, or without `pcntl_fork()` and `parallel`. It now returns a `SyncHandler` that runs the closure
-synchronously (see New Features). Code that caught that exception to detect an unsupported environment should
-check `Thread::handlerClass() === SyncHandler::class` instead. `ForkHandler` and `ParallelHandler` still throw
-when instantiated directly outside the CLI.
+other non-CLI SAPI, or without `pcntl_fork()` and `parallel`. It now returns a `ProcessHandler`, which runs the
+closure in a child PHP CLI process, or, without `proc_open()` or a PHP CLI binary, a `SyncHandler` that runs the
+closure synchronously (see New Features). Code that caught that exception to detect an unsupported environment should
+check `Thread::handlerClass()` instead. `ForkHandler` and `ParallelHandler` still throw when instantiated directly
+outside the CLI.
+
+### Promise::all() keeps the order of the promises
+
+`Promise::all()` resolves with the results in the order of the promises passed to it, as in JavaScript. Before,
+they were in the order the promises settled (see Bug Fixes).
+
+### A promise whose thread ends without settling it is rejected
+
+An executor that returns without calling `$resolve` or `$reject` now rejects the promise with a `RuntimeException`
+("The thread ended without settling the promise ..."), instead of leaving it pending (see Bug Fixes).
 
 ## New Features
 
@@ -60,6 +71,26 @@ when instantiated directly outside the CLI.
   or for a deterministic run; `null` restores the automatic choice. A forced `ForkHandler` or `ParallelHandler`
   still throws when it cannot run. The promise and thread pool tests run with both `ForkHandler` and `SyncHandler`.
 
+### ProcessHandler: parallel threads outside the CLI
+
+- New `ByJG\PHPThread\Handler\ProcessHandler`: runs the closure in a child PHP CLI process started with
+  `proc_open()` (the approach of amphp/parallel), so threads, thread pools and promises run in parallel under
+  PHP-FPM, FrankenPHP or any other SAPI. The closure, its arguments and `$onFinish` are serialized with
+  `laravel/serializable-closure`; the child (`src/Handler/process-worker.php`) loads the project's Composer
+  autoloader, runs the closure and `$onFinish`, and sends back the result or the exception, which `getResult()`
+  re-throws (as `ForkHandler`). `getResult()` waits for the child. `terminate()` uses `proc_terminate()`.
+- The closure, its arguments, what it captures and its result must be serializable (no resources), the child does
+  not run the application bootstrap, and two closures on the same line can be mixed up by the serializer.
+  See `docs/thread.md` (ProcessHandler) and `docs/limitations.md`.
+- `ProcessHandler::setPhpBinary(?string)` sets the PHP CLI binary (default: `PHP_BINARY` in the CLI, otherwise
+  `PHP_BINDIR/php` or `php` in the `PATH`); `getPhpBinary()` and `isAvailable()` tell what is used.
+- `Thread::create()` picks the `ProcessHandler` when `ParallelHandler` and `ForkHandler` cannot be used (outside the
+  CLI, or a CLI without `parallel`/`pcntl`) and `proc_open()` and a PHP CLI binary are available; the
+  `SyncHandler` is now the last fallback. `Thread::useHandler()` accepts `ProcessHandler::class`.
+- `SharedMemory::getPrefix()` and `SharedMemory::usePrefix()` (`@internal`) let the child process share the
+  parent's shared memory (used by the promises).
+- The promise and thread pool tests also run with the `ProcessHandler`.
+
 ## Bug Fixes
 
 - `then()` with an `$onRejected` handler and `catch()` rejected the returned promise with the handler's
@@ -77,7 +108,25 @@ when instantiated directly outside the CLI.
   anything chained after it never returned. It now rejects the promise, like an exception. A `finally()`
   callback still written as `fn($value) => ...` gets no argument and rejects with `ArgumentCountError`.
 
+- `Promise::all()` resolved with the results in the order the promises settled, not the order they were passed
+  in, so `Promise::all($slow, $fast)` gave `[fast, slow]` with the `ForkHandler`. The results now follow the order
+  of the promises, as in JavaScript.
+
+- A promise whose thread died (fatal error, `exit`, killed) or whose executor returned without settling it stayed
+  pending forever: `await()` threw "Promise result is null" and the promises chained to it (`then`, `catch`,
+  `finally`, `all`, `race`), which wait in other processes, never returned. The process that created the promise
+  now rejects it with a `RuntimeException` (the `ProcessHandler` gives the exit code) and shares the rejection
+  with the chained promises, which reject with the same reason.
+
 ## Requirements
+
+- `ext-pcntl` and `ext-posix` moved from `require` to `suggest`: they are only needed by the `ForkHandler`, which
+  checks that both are loaded (`ForkHandler::isAvailable()`). Without them `Thread::create()` uses the
+  `ProcessHandler` in the CLI too. `src/polyfill.php` (Composer `files` autoload) defines `SIGKILL` and `SIGTERM`
+  when `pcntl` is not loaded.
+
+- New dependency `laravel/serializable-closure` `^2.1` (requires `php ^8.1`), used by the `ProcessHandler` to send
+  the closures to the child process.
 
 - PHP 8.3, 8.4, 8.5 and 8.6 are now supported: `"php": ">=8.3 <8.7"`.
   The previous `<8.6` upper bound excluded PHP 8.6, since `<8.6` is exclusive.
@@ -110,8 +159,13 @@ While 7.0 is unreleased these resolve to `7.0.x-dev` from each component's
 - The build matrix now includes PHP 8.6.
 - The Psalm job runs on PHP 8.5.
 - The PHP-FPM check expects the `/thread`, `/threadpool` and `/promise` endpoints to return their results
-  (computed by the `SyncHandler`) instead of the "Threads only works in CLI mode" error.
+  (computed by the `ProcessHandler`, in parallel) instead of the "Threads only works in CLI mode" error, and the
+  new `/handler` endpoint to report the `ProcessHandler`.
 
 ## Housekeeping
+
+- The test suite runs faster: the sleeps are tenths of a second instead of seconds, and the timing-dependent
+  scenarios (race order, parallelism) run only with the parallel handlers. PHPUnit enforces a 20 s limit per test
+  (`enforceTimeLimit`, `failOnRisky`), so a test that would hang fails instead.
 
 - `phpunit.xml.dist` renamed to `phpunit.xml`.

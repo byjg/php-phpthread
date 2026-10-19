@@ -5,6 +5,7 @@ namespace ByJG\PHPThread;
 use ByJG\Cache\Exception\InvalidArgumentException;
 use ByJG\PHPThread\Handler\ForkHandler;
 use ByJG\PHPThread\Handler\ParallelHandler;
+use ByJG\PHPThread\Handler\ProcessHandler;
 use ByJG\PHPThread\Handler\SyncHandler;
 use ByJG\PHPThread\Handler\ThreadInterface;
 use Closure;
@@ -15,8 +16,8 @@ use Psr\Container\NotFoundExceptionInterface;
  * Native Implementation of Threads in PHP.
  *
  * A class to spawn a thread. Uses the parallel extension (ZTS) or forks the process (pcntl).
- * Outside the CLI, or when neither is available, the closure runs synchronously
- * in the current process (no parallelism).
+ * Outside the CLI, or when neither is available, the closure runs in a child PHP CLI process
+ * (proc_open) or, when that is not possible either, synchronously in the current process (no parallelism).
  */
 class Thread
 {
@@ -35,6 +36,7 @@ class Thread
         $instance = match (static::handlerClass()) {
             ParallelHandler::class => new ParallelHandler(),
             ForkHandler::class => new ForkHandler($onFinish),
+            ProcessHandler::class => new ProcessHandler($onFinish),
             default => new SyncHandler($onFinish),
         };
 
@@ -45,17 +47,17 @@ class Thread
 
     /**
      * Force the handler create() uses, or restore the automatic choice with null.
-     * A forced ForkHandler or ParallelHandler still throws when it cannot run.
+     * A forced ForkHandler, ParallelHandler or ProcessHandler still throws when it cannot run.
      *
-     * @param class-string<ThreadInterface>|null $handlerClass ParallelHandler, ForkHandler or SyncHandler
+     * @param class-string<ThreadInterface>|null $handlerClass ParallelHandler, ForkHandler, ProcessHandler or SyncHandler
      */
     public static function useHandler(?string $handlerClass): void
     {
         if ($handlerClass !== null
-            && !in_array($handlerClass, [ParallelHandler::class, ForkHandler::class, SyncHandler::class], true)
+            && !in_array($handlerClass, [ParallelHandler::class, ForkHandler::class, ProcessHandler::class, SyncHandler::class], true)
         ) {
             throw new \InvalidArgumentException(
-                "Invalid handler '$handlerClass': use ParallelHandler, ForkHandler or SyncHandler"
+                "Invalid handler '$handlerClass': use ParallelHandler, ForkHandler, ProcessHandler or SyncHandler"
             );
         }
 
@@ -64,7 +66,7 @@ class Thread
 
     /**
      * The handler class create() uses: the one forced by useHandler() or, by default,
-     * ParallelHandler or ForkHandler in the CLI and SyncHandler otherwise.
+     * ParallelHandler or ForkHandler in the CLI, otherwise ProcessHandler if it is available, else SyncHandler.
      *
      * @return class-string<ThreadInterface>
      */
@@ -83,6 +85,10 @@ class Thread
             }
         }
 
+        if (static::hasProcess()) {
+            return ProcessHandler::class;
+        }
+
         return SyncHandler::class;
     }
 
@@ -98,7 +104,12 @@ class Thread
 
     protected static function hasFork(): bool
     {
-        return function_exists('pcntl_fork');
+        return ForkHandler::isAvailable();
+    }
+
+    protected static function hasProcess(): bool
+    {
+        return ProcessHandler::isAvailable();
     }
 
     /**

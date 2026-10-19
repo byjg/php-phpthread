@@ -5,6 +5,7 @@ namespace Tests;
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadPool;
 use ByJG\PHPThread\Handler\ForkHandler;
+use ByJG\PHPThread\Handler\ProcessHandler;
 use ByJG\PHPThread\Handler\SyncHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +22,7 @@ class ThreadPoolTest extends TestCase
     protected function getClosure()
     {
         return function ($arg) {
-            sleep(1 * $arg);
+            usleep(100_000 * $arg);
             return $arg * 3;
         };
     }
@@ -81,6 +82,7 @@ class ThreadPoolTest extends TestCase
     {
         return [
             'fork' => [ForkHandler::class],
+            'process' => [ProcessHandler::class],
             'sync' => [SyncHandler::class],
         ];
     }

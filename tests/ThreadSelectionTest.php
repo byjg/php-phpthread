@@ -4,6 +4,7 @@ namespace Tests;
 
 use ByJG\PHPThread\Handler\ForkHandler;
 use ByJG\PHPThread\Handler\ParallelHandler;
+use ByJG\PHPThread\Handler\ProcessHandler;
 use ByJG\PHPThread\Handler\SyncHandler;
 use ByJG\PHPThread\Thread;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -20,21 +21,24 @@ class ThreadSelectionTest extends TestCase
     public static function environmentProvider(): array
     {
         return [
-            'cli, parallel and pcntl' => [true, true, true, ParallelHandler::class],
-            'cli, pcntl only' => [true, false, true, ForkHandler::class],
-            'cli, no parallel nor pcntl' => [true, false, false, SyncHandler::class],
-            'fpm, parallel and pcntl' => [false, true, true, SyncHandler::class],
-            'fpm, pcntl only' => [false, false, true, SyncHandler::class],
-            'fpm, no parallel nor pcntl' => [false, false, false, SyncHandler::class],
+            'cli, parallel and pcntl' => [true, true, true, true, ParallelHandler::class],
+            'cli, pcntl only' => [true, false, true, true, ForkHandler::class],
+            'cli, no parallel nor pcntl' => [true, false, false, true, ProcessHandler::class],
+            'cli, no parallel, pcntl nor proc_open' => [true, false, false, false, SyncHandler::class],
+            'fpm, parallel and pcntl' => [false, true, true, true, ProcessHandler::class],
+            'fpm, pcntl only' => [false, false, true, true, ProcessHandler::class],
+            'fpm, no parallel nor pcntl' => [false, false, false, true, ProcessHandler::class],
+            'fpm, no proc_open or no php cli' => [false, true, true, false, SyncHandler::class],
         ];
     }
 
     #[DataProvider('environmentProvider')]
-    public function testHandlerClass(bool $cli, bool $parallel, bool $fork, string $expected)
+    public function testHandlerClass(bool $cli, bool $parallel, bool $fork, bool $process, string $expected)
     {
         ThreadInEnvironment::$cli = $cli;
         ThreadInEnvironment::$parallel = $parallel;
         ThreadInEnvironment::$fork = $fork;
+        ThreadInEnvironment::$process = $process;
 
         $this->assertEquals($expected, ThreadInEnvironment::handlerClass());
     }
@@ -44,6 +48,7 @@ class ThreadSelectionTest extends TestCase
         ThreadInEnvironment::$cli = false;
         ThreadInEnvironment::$parallel = false;
         ThreadInEnvironment::$fork = true;
+        ThreadInEnvironment::$process = false;
 
         $finished = false;
         $thread = ThreadInEnvironment::create(fn($arg) => $arg * 3, function () use (&$finished) {
@@ -54,6 +59,29 @@ class ThreadSelectionTest extends TestCase
         $thread->start(2);
         $this->assertTrue($finished);
         $this->assertEquals(6, $thread->getResult());
+    }
+
+    public function testCreateProcessHandlerOutsideTheCli()
+    {
+        ThreadInEnvironment::$cli = false;
+        ThreadInEnvironment::$parallel = false;
+        ThreadInEnvironment::$fork = true;
+        ThreadInEnvironment::$process = true;
+
+        $thread = ThreadInEnvironment::create(fn($arg) => [$arg * 3, getmypid()]);
+        $this->assertInstanceOf(ProcessHandler::class, $thread);
+
+        $thread->start(2);
+        [$result, $pid] = $thread->getResult();
+        $this->assertEquals(6, $result);
+        $this->assertNotEquals(getmypid(), $pid);
+    }
+
+    public function testUseProcessHandler()
+    {
+        Thread::useHandler(ProcessHandler::class);
+        $this->assertEquals(ProcessHandler::class, Thread::handlerClass());
+        $this->assertInstanceOf(ProcessHandler::class, Thread::create(fn() => null));
     }
 
     public function testUseHandler()

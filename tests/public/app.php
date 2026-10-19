@@ -20,6 +20,13 @@ $routeDefinition->addRoute(Route::get("/ping")
     })
 );
 
+$routeDefinition->addRoute(Route::get("/handler")
+    ->withOutputProcessor(JsonOutputProcessor::class)
+    ->withClosure(function (HttpResponse $response, HttpRequest $request) {
+        $response->write(['handler' => Thread::handlerClass()]);
+    })
+);
+
 $routeDefinition->addRoute(Route::get("/thread")
     ->withOutputProcessor(JsonOutputProcessor::class)
     ->withClosure(function (HttpResponse $response, HttpRequest $request) {

@@ -5,26 +5,29 @@
   "prefer-stable": true,
   "require": {
     "byjg/cache-engine": "^7.0",
-    "ext-pcntl": "*",
-    "ext-posix": "*",
-    "php": ">=8.3 <8.7"
+    "php": ">=8.3 <8.7",
+    "laravel/serializable-closure": "^2.1"
   },
   "require-dev": {
     "phpunit/phpunit": "^12.5",
-
     "react/promise": "^3.2",
     "react/event-loop": "^1.5",
     "byjg/restserver": "^7.0",
     "psalm/phar": "^6.16"
   },
   "suggest": {
+    "ext-pcntl": "Run the threads with the ForkHandler in the CLI (with ext-posix)",
+    "ext-posix": "Run the threads with the ForkHandler in the CLI (with ext-pcntl)",
     "ext-pthreads": "*"
   },
   "license": "MIT",
   "autoload": {
     "psr-4": {
       "ByJG\\PHPThread\\": "src/"
-    }
+    },
+    "files": [
+      "src/polyfill.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {

@@ -12,6 +12,7 @@ class ThreadInEnvironment extends Thread
     public static bool $cli = true;
     public static bool $parallel = false;
     public static bool $fork = true;
+    public static bool $process = true;
 
     #[\Override]
     protected static function isCli(): bool
@@ -29,5 +30,11 @@ class ThreadInEnvironment extends Thread
     protected static function hasFork(): bool
     {
         return self::$fork;
+    }
+
+    #[\Override]
+    protected static function hasProcess(): bool
+    {
+        return self::$process;
     }
 }

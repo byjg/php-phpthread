@@ -25,6 +25,7 @@ bridging the gap for a language that was not inherently designed for threading.
 3. [How It Works](#how-it-works)
    - [Default PHP (Non-ZTS)](#default-php-non-zts)
    - [PHP ZTS (Zend Thread Safety)](#php-zts-zend-thread-safety)
+   - [Outside the CLI](#outside-the-cli)
 4. [Features](#features)
 5. [Limitations](#limitations)
 6. [Installation](#installation)
@@ -50,6 +51,7 @@ With PHPThread, you can overcome these limitations by leveraging:
 
 - **Forking (Default PHP)** for simulating threading.
 - **Zend Thread Safety (ZTS)** for true multi-threading environments.
+- **Child PHP processes** (`proc_open`) outside the CLI, e.g. under PHP-FPM.
 
 ---
 
@@ -64,6 +66,7 @@ this method can approximate threading behavior.
 **Requirements:**
 
 - [pcntl](https://www.php.net/manual/en/book.pcntl.php) and [posix](https://www.php.net/manual/en/book.posix.php): For process control.
+  They are optional (`suggest` in `composer.json`): without them the `ProcessHandler` is used.
 - A tmpfs mounted at `/dev/shm`: For sharing results between processes.
 
 ---
@@ -77,6 +80,20 @@ all PHP distributions.
 **Requirements:**
 
 - [parallel](https://www.php.net/manual/en/book.parallel.php): For multi-threading functionality.
+
+---
+
+### Outside the CLI
+
+Forking and `parallel` only work in the CLI. Outside it, the `ProcessHandler` runs each closure in a child
+PHP CLI process started with `proc_open()` (the approach of amphp/parallel). The closure is serialized with
+[laravel/serializable-closure](https://github.com/laravel/serializable-closure), so it, its arguments and its result
+must be serializable (no resources). See [ProcessHandler](docs/thread.md#processhandler).
+
+**Requirements:**
+
+- `proc_open()` enabled and a PHP CLI binary (found automatically, or set with `ProcessHandler::setPhpBinary()`).
+- A tmpfs mounted at `/dev/shm`: used by promises.
 
 ---
 
@@ -102,18 +119,16 @@ Supported Promise Methods:
 
 See also [Limitations](docs/limitations.md).
 
-### Parallel Execution in CLI Mode Only
+### Parallel Execution Outside the CLI
 
 :::caution Important
-Threads **only run in parallel in CLI mode** (command-line interface). In web server environments such as:
-- PHP-FPM
-- Apache with mod_php
-- Any other web server SAPI
+In web server environments such as PHP-FPM, Apache with mod_php or FrankenPHP, `pcntl_fork()` and `parallel`
+cannot be used. There `Thread::create()` returns a `ProcessHandler`: the closure runs in parallel in a **child PHP
+CLI process**, so it must be serializable (see [ProcessHandler](docs/thread.md#processhandler) for the limits).
 
-or when neither `pcntl_fork()` nor the `parallel` extension is available, `Thread::create()` falls back to the
-`SyncHandler`: the closure runs **synchronously** in the current process when `start()` is called. The code keeps
-working (threads, thread pools and promises return the same results), but **there is no parallelism**: the work is
-done one task after another.
+When `proc_open()` is disabled or no PHP CLI binary is found, it falls back to the `SyncHandler`: the closure runs
+**synchronously** in the current process when `start()` is called. The code keeps working (threads, thread pools
+and promises return the same results), but **there is no parallelism**: the work is done one task after another.
 :::
 
 To know which handler is used, call `Thread::handlerClass()` (the class `Thread::create()` returns in the current
@@ -124,7 +139,7 @@ use ByJG\PHPThread\Handler\SyncHandler;
 use ByJG\PHPThread\Thread;
 
 if (Thread::handlerClass() === SyncHandler::class) {
-    // No parallelism here: ForkHandler or ParallelHandler are not available
+    // No parallelism here: ParallelHandler, ForkHandler or ProcessHandler are not available
 }
 ```
 
@@ -133,12 +148,9 @@ run), and `Thread::useHandler(null)` restores the automatic choice.
 
 **Why?**
 
-Both threading approaches used by this library require direct process control, which is unavailable in web server environments:
-
-- **pcntl extension** (used for forking): Disabled in web server contexts for security and stability reasons. The `pcntl_fork()` function and related process control functions only work in CLI mode.
-- **parallel extension** (used for true threading): Also requires CLI mode and is not available in web server SAPIs.
-
-Additionally, forking or creating threads within a web server process would interfere with the server's own process/thread management, potentially causing instability.
+- **pcntl extension** (used for forking): forking a web server worker would interfere with the server's own process management, so the library only forks in the CLI.
+- **parallel extension** (used for true threading): requires a ZTS build and the CLI.
+- **proc_open** (used by the `ProcessHandler`) starts a separate PHP CLI process, which is safe in any SAPI, at the cost of starting PHP (and the Composer autoloader) for each thread.
 
 **Use Cases:**
 
@@ -148,8 +160,9 @@ This library is designed for:
 - Command-line tools
 - Long-running CLI applications
 - Scheduled tasks (cron jobs)
+- Running a few independent tasks in parallel inside a web request
 
-For web applications requiring real asynchronous processing, consider using message queues (RabbitMQ, Redis, etc.) with background workers running in CLI mode.
+For long or many background tasks in web applications, consider using message queues (RabbitMQ, Redis, etc.) with background workers running in CLI mode.
 
 ### Forking and Data Sharing
 
@@ -169,14 +182,20 @@ However:
 #### Non-ZTS (Default PHP)
 
 - PHP ≥8.3
-- `pcntl` and `posix` extensions
+- `pcntl` and `posix` extensions (optional: without them the `ProcessHandler` runs the threads)
 - tmpfs mounted at `/dev/shm`
+
+#### Outside the CLI (PHP-FPM, ...)
+
+- PHP ≥8.3
+- `proc_open()` enabled and a PHP CLI binary installed next to the server one
+- tmpfs mounted at `/dev/shm` (for promises)
 
 #### ZTS (Zend Thread Safety)
 
 - PHP ≥8.3 compiled with `--enable-zts`
 - `parallel` extension
-- `pcntl` and `posix` extensions (required by `composer.json`)
+- `pcntl` and `posix` extensions (optional)
 
 ### Install via Composer
 

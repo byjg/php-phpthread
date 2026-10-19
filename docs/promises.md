@@ -16,10 +16,19 @@ the callback will be executed.
 
 It also has a method `await()` that will wait for the promise to be fulfilled or rejected.
 
+A promise whose thread ends without settling it is rejected with a `RuntimeException`: the thread died (fatal error,
+`exit`, killed) or the executor returned without calling `$resolve` or `$reject`. Unlike JavaScript, where such a
+promise stays pending, nothing could settle it later, so `await()` and the chained promises would wait forever.
+The process that created the promise detects it when it checks the promise (`await()`, `getStatus()`, or the
+promises chained to it), and the chained promises reject with the same reason.
+
 :::note
-In PHP-FPM (or any other non-CLI SAPI), or without `pcntl` and `parallel`, the promises still work but are not
-executed in background: the executor runs synchronously when the promise is created, so the promise is already
-settled when `Promise::create()` returns. See the `SyncHandler` in [Thread](thread.md#thread-api).
+In PHP-FPM (or any other non-CLI SAPI), or without `pcntl` and `parallel`, each executor runs in a child PHP CLI
+process (`ProcessHandler`), so the executors and the `then()`/`catch()`/`finally()` callbacks must be serializable
+and two of them should not be written on the same line (see [ProcessHandler](thread.md#processhandler)).
+Without `proc_open()` or a PHP CLI binary the promises still work but are not executed in background: the executor
+runs synchronously when the promise is created, so the promise is already settled when `Promise::create()` returns.
+See the `SyncHandler` in [Thread](thread.md#thread-api).
 :::
 
 ## Promises Example:
@@ -158,7 +167,8 @@ $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject * 2)->await(
 
 ### All method
 
-The `all` method is used to wait for all promises to be fulfilled or rejected.
+The `all` method is used to wait for all promises to be fulfilled or rejected. The results follow the order of the
+promises passed to it, not the order they settle.
 
 ```php
 <?php

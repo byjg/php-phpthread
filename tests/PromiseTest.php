@@ -3,6 +3,7 @@
 namespace Tests;
 
 use ByJG\PHPThread\Handler\ForkHandler;
+use ByJG\PHPThread\Handler\ProcessHandler;
 use ByJG\PHPThread\Handler\SyncHandler;
 use ByJG\PHPThread\Promise;
 use ByJG\PHPThread\PromiseStatus;
@@ -11,7 +12,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every scenario runs with the ForkHandler and with the SyncHandler fallback
+ * Every scenario runs with the ForkHandler, the ProcessHandler and the SyncHandler fallback.
+ *
+ * ProcessHandler serializes the closures from their source code, which cannot tell apart two closures
+ * on the same line with the same number of parameters: the then() handlers are on separate lines.
  */
 class PromiseTest extends TestCase
 {
@@ -19,7 +23,19 @@ class PromiseTest extends TestCase
     {
         return [
             'fork' => [ForkHandler::class],
+            'process' => [ProcessHandler::class],
             'sync' => [SyncHandler::class],
+        ];
+    }
+
+    /**
+     * The handlers that run the executors in parallel, for the scenarios that depend on timing
+     */
+    public static function parallelHandlerProvider(): array
+    {
+        return [
+            'fork' => [ForkHandler::class],
+            'process' => [ProcessHandler::class],
         ];
     }
 
@@ -89,8 +105,10 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Rejected, $x->getStatus());
 
         // Test then
-        $this->assertEquals(6, $x->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
-        $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)->await());
+        $this->assertEquals(6, $x->then(fn($resolve) => $resolve + 2,
+            fn($reject) => $reject + 5)->await());
+        $this->assertEquals(3, $x->then(fn($resolve) => $resolve + 10,
+            fn($reject) => $reject + 2)->await());
     }
 
     #[DataProvider('handlerProvider')]
@@ -101,8 +119,10 @@ class PromiseTest extends TestCase
         $result = Promise::create(function ($resolve, $reject) {
             $reject(1);
         })
-            ->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)
-            ->then(fn($resolve) => $resolve + 10, fn($reject) => $reject + 2)
+            ->then(fn($resolve) => $resolve + 2,
+                fn($reject) => $reject + 5)
+            ->then(fn($resolve) => $resolve + 10,
+                fn($reject) => $reject + 2)
             ->await();
 
         // The first onRejected handles the rejection, so the chain continues fulfilled: 1 + 5 + 10
@@ -129,6 +149,24 @@ class PromiseTest extends TestCase
         $result = Promise::all($promise1, $promise2, $promise3)->await();
 
         $this->assertEquals([1, 2, 3], $result);
+    }
+
+    #[DataProvider('parallelHandlerProvider')]
+    public function testAllKeepsTheOrder(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise1 = new Promise(function ($resolve, $reject) {
+            usleep(200_000);
+            $resolve(1);
+        });
+
+        $promise2 = new Promise(function ($resolve, $reject) {
+            $resolve(2);
+        });
+
+        // As in JavaScript, the results follow the order of the promises, not the order they settle
+        $this->assertEquals([1, 2], Promise::all($promise1, $promise2)->await());
     }
 
     #[DataProvider('handlerProvider')]
@@ -207,24 +245,14 @@ class PromiseTest extends TestCase
         $this->assertEquals("Reason: 2", $result);
     }
 
-    public static function raceProvider(): array
-    {
-        return [
-            // promise2 settles first, while promise1 and promise3 sleep in their own processes
-            'fork' => [ForkHandler::class, 2],
-            // Each executor runs to the end when its promise is created, so all three are already
-            // settled when race() runs and the first one in the list wins, as in JavaScript
-            'sync' => [SyncHandler::class, 1],
-        ];
-    }
-
-    #[DataProvider('raceProvider')]
-    public function testRaceFulfilled(string $handlerClass, int $expected)
+    #[DataProvider('parallelHandlerProvider')]
+    public function testRaceFulfilled(string $handlerClass)
     {
         Thread::useHandler($handlerClass);
 
+        // promise2 settles first, while promise1 and promise3 sleep in parallel
         $promise1 = new Promise(function ($resolve, $reject) {
-            sleep(1);
+            usleep(200_000);
             $resolve(1);
         });
 
@@ -233,14 +261,26 @@ class PromiseTest extends TestCase
         });
 
         $promise3 = new Promise(function ($resolve, $reject) {
-            sleep(1);
+            usleep(200_000);
             $resolve(3);
         });
 
-        $result = Promise::race($promise1, $promise2, $promise3)->await();
+        $this->assertEquals(2, Promise::race($promise1, $promise2, $promise3)->await());
+    }
 
-        $this->assertEquals($expected, $result);
+    #[DataProvider('handlerProvider')]
+    public function testRaceSettled(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
 
+        $promise1 = Promise::resolve(1);
+        $promise2 = Promise::resolve(2);
+        $promise1->await();
+        $promise2->await();
+
+        // When all are already settled the first one in the list wins, as in JavaScript.
+        // With SyncHandler every executor already ran when its promise was created.
+        $this->assertEquals(1, Promise::race($promise1, $promise2)->await());
     }
 
     #[DataProvider('handlerProvider')]
@@ -323,7 +363,8 @@ class PromiseTest extends TestCase
         Thread::useHandler($handlerClass);
 
         $promise = Promise::reject(1);
-        $this->assertEquals(6, $promise->then(fn($resolve) => $resolve + 2, fn($reject) => $reject + 5)->await());
+        $this->assertEquals(6, $promise->then(fn($resolve) => $resolve + 2,
+            fn($reject) => $reject + 5)->await());
     }
 
     #[DataProvider('handlerProvider')]
@@ -405,7 +446,8 @@ class PromiseTest extends TestCase
 
         $promise = Promise::reject(1)
             ->catch(fn($reason) => $reason + 100)
-            ->then(fn($value) => $value + 10, fn($reason) => "Rejected: $reason");
+            ->then(fn($value) => $value + 10,
+                fn($reason) => "Rejected: $reason");
 
         $this->assertEquals(111, $promise->await());
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
@@ -417,7 +459,8 @@ class PromiseTest extends TestCase
         Thread::useHandler($handlerClass);
 
         $promise = Promise::reject(1)
-            ->then(fn($value) => $value, fn($reason) => $reason + 5);
+            ->then(fn($value) => $value,
+                fn($reason) => $reason + 5);
 
         $this->assertEquals(6, $promise->await());
         $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
@@ -504,5 +547,65 @@ class PromiseTest extends TestCase
         $result = $promise->await();
         $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
         $this->assertEquals('Finally failed', $result->getMessage());
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testExecutorThatNeverSettlesRejects(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        // Without an event loop, nothing can settle the promise once its thread ended
+        $promise = new Promise(function ($resolve, $reject) {
+        });
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertInstanceOf(\RuntimeException::class, $result);
+        $this->assertEquals(
+            'The thread ended without settling the promise ' . $promise->getPromiseId(),
+            $result->getMessage()
+        );
+    }
+
+    #[DataProvider('parallelHandlerProvider')]
+    public function testThreadThatDiesRejects(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = new Promise(fn() => exit(3));
+
+        $result = $promise->await();
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertInstanceOf(\RuntimeException::class, $result);
+        $this->assertEquals(
+            $handlerClass === ProcessHandler::class
+                ? 'The PHP process ended without a result (exit code 3)'
+                : 'The thread ended without settling the promise ' . $promise->getPromiseId(),
+            $result->getMessage()
+        );
+    }
+
+    #[DataProvider('parallelHandlerProvider')]
+    public function testChainedPromisesOfAThreadThatDiesReject(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        // Only the chained promises are awaited: the then() and all() executors wait in other processes
+        // for the promise whose thread dies
+        $dies = new Promise(fn() => exit(3));
+        $then = $dies->then(fn($value) => $value);
+        $catch = $dies
+            ->then(fn($value) => $value)
+            ->catch(fn($reason) => get_class($reason));
+        $all = Promise::all(Promise::resolve(1), $dies);
+
+        $this->assertInstanceOf(\RuntimeException::class, $then->await());
+        $this->assertEquals(PromiseStatus::Rejected, $then->getStatus());
+
+        $this->assertEquals(\RuntimeException::class, $catch->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $catch->getStatus());
+
+        $this->assertInstanceOf(\RuntimeException::class, $all->await());
+        $this->assertEquals(PromiseStatus::Rejected, $all->getStatus());
     }
 }

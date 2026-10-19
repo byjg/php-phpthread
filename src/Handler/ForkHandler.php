@@ -37,8 +37,8 @@ class ForkHandler implements ThreadInterface
      */
     public function __construct(?Closure $onFinish = null)
     {
-        if (!function_exists('pcntl_fork')) {
-            throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
+        if (!self::isAvailable()) {
+            throw new RuntimeException('ForkHandler needs the pcntl and posix extensions, which are not available on Windows.');
         }
 
         if (php_sapi_name() != 'cli') {
@@ -47,6 +47,14 @@ class ForkHandler implements ThreadInterface
 
         SharedMemory::getInstance();
         $this->onFinish = $onFinish;
+    }
+
+    /**
+     * The pcntl and posix extensions are loaded (they are optional in composer.json)
+     */
+    public static function isAvailable(): bool
+    {
+        return extension_loaded('pcntl') && extension_loaded('posix');
     }
 
     /**

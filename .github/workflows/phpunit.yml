@@ -41,11 +41,13 @@ jobs:
       - run: composer install
       - run: php tests/get_class_name.php
       - run: composer test
-      - name: Validate PHP-FPM. Threads fall back to synchronous execution.
+      - name: Validate PHP-FPM. Threads run in child PHP CLI processes (ProcessHandler).
         run: |
           apk add --no-cache curl
           echo "Ping"
           curl "http://nginx-php/ping" || true
+          echo "Handler"
+          curl -s "http://nginx-php/handler" | grep 'ProcessHandler'
           echo "Threads"
           curl -s "http://nginx-php/thread" | grep '{"thr1":6,"thr2":3}'
           echo "Threadpool"
