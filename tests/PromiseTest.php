@@ -708,4 +708,91 @@ class PromiseTest extends TestCase
         $this->assertEquals(PromiseStatus::Pending, $promise->getStatus());
         $this->assertEquals('slow', $promise->await());
     }
+
+    #[DataProvider('handlerProvider')]
+    public function testMap(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $promise = Promise::map(
+            ['a' => 3, 'b' => 1, 'c' => 2],
+            fn(int $item, string $key) => "$key=" . ($item * 10),
+            2
+        );
+
+        // In the order (and keys) of the items
+        $this->assertEquals(['a' => 'a=30', 'b' => 'b=10', 'c' => 'c=20'], $promise->await());
+        $this->assertEquals(PromiseStatus::Fulfilled, $promise->getStatus());
+    }
+
+    #[DataProvider('parallelHandlerProvider')]
+    public function testMapLimitsTheThreadsRunning(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+        $start = microtime(true);
+
+        // 4 items of 0.3 s, 2 at a time: two rounds
+        $values = Promise::map([1, 2, 3, 4], function (int $item) {
+            usleep(300_000);
+            return getmypid();
+        }, 2)->await();
+
+        $elapsed = microtime(true) - $start;
+        $this->assertGreaterThanOrEqual(0.6, $elapsed);
+        // In sequence it would take 1.2 s
+        $this->assertLessThan(1.1, $elapsed);
+        // Each item ran in its own thread
+        $this->assertCount(4, array_unique($values));
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testMapStopsAtTheFirstRejection(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+        $dir = sys_get_temp_dir() . '/map_' . bin2hex(random_bytes(4));
+        mkdir($dir);
+
+        $promise = Promise::map([1, 2, 3, 4], function (int $item) use ($dir) {
+            touch("$dir/$item");
+            if ($item === 2) {
+                throw new \RuntimeException("item $item failed");
+            }
+            return $item;
+        }, 1);
+
+        $result = $promise->await();
+        $started = array_map('intval', array_diff(scandir($dir), ['.', '..']));
+        sort($started);
+        array_map('unlink', glob("$dir/*"));
+        rmdir($dir);
+
+        $this->assertEquals(PromiseStatus::Rejected, $promise->getStatus());
+        $this->assertInstanceOf(\RuntimeException::class, $result);
+        $this->assertEquals('item 2 failed', $result->getMessage());
+        $this->assertEquals([1, 2], $started);
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testMapWithAGeneratorAndPromises(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+        $items = (function () {
+            yield 'x' => 1;
+            yield 'y' => 2;
+        })();
+
+        // A promise returned by the callback is followed
+        $values = Promise::map($items, fn(int $item) => Promise::resolve($item + 100), 2)->await();
+
+        $this->assertEquals(['x' => 101, 'y' => 102], $values);
+    }
+
+    public function testMapEmptyAndInvalidConcurrency()
+    {
+        $this->assertEquals([], Promise::map([], fn() => 1, 2)->await());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The concurrency must be at least 1');
+        Promise::map([1], fn() => 1, 0);
+    }
 }

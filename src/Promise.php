@@ -302,6 +302,63 @@ class Promise implements PromiseInterface
         }), $promises);
     }
 
+    /**
+     * Run the callback with each item and key in threads, at most $concurrency at a time: the next item starts when
+     * one settles (e.g. one thread per CPU core). Fulfilled with the values in the order (and keys) of the items,
+     * or rejected with the first rejection, after which no other item starts.
+     *
+     * The threads are managed by the thread of the returned promise. The items, the callback and the values must be
+     * serializable, so the items are read at once (a generator is converted to an array).
+     *
+     * @param iterable $items
+     * @param Closure $callback fn($item, $key), run in a thread (a returned promise is followed)
+     */
+    public static function map(iterable $items, Closure $callback, int $concurrency): PromiseInterface
+    {
+        if ($concurrency < 1) {
+            throw new \InvalidArgumentException('The concurrency must be at least 1');
+        }
+        $items = is_array($items) ? $items : iterator_to_array($items);
+
+        return new Promise(function ($resolve, $reject) use ($items, $callback, $concurrency) {
+            $keys = array_keys($items);
+            $next = 0;
+            $running = [];
+            $values = [];
+
+            while ($next < count($keys) || count($running) > 0) {
+                while (count($running) < $concurrency && $next < count($keys)) {
+                    $key = $keys[$next++];
+                    $running[$key] = Promise::try($callback, $items[$key], $key);
+                }
+
+                foreach ($running as $key => $promise) {
+                    $status = $promise->getStatus();
+                    if ($status === PromiseStatus::Pending) {
+                        continue;
+                    }
+                    $result = $promise->getResult();
+                    if ($result === null) {
+                        throw new \RuntimeException('Promise result is null');
+                    }
+                    if ($status === PromiseStatus::Rejected) {
+                        $reject($result->getResult());
+                        return;
+                    }
+                    $values[$key] = $result->getResult();
+                    unset($running[$key]);
+                }
+
+                if (count($running) >= $concurrency || ($next >= count($keys) && count($running) > 0)) {
+                    usleep(1000);
+                }
+            }
+
+            // The values follow the order of the items, not the order they settle
+            $resolve(array_replace(array_fill_keys($keys, null), $values));
+        });
+    }
+
     public static function race(PromiseInterface ...$promises): PromiseInterface
     {
         return self::waitingFor(new Promise(function ($resolve, $reject) use ($promises) {

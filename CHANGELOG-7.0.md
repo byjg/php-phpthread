@@ -61,6 +61,12 @@ An executor that returns without calling `$resolve` or `$reject` now rejects the
 - `Promise::try(Closure $closure, mixed ...$args)` runs the closure in a thread and returns a promise fulfilled with
   its return value or rejected with what it throws, as `Promise.try()` in JavaScript. See `docs/promises.md`.
 
+### Promise::map()
+
+- `Promise::map(iterable $items, Closure $callback, int $concurrency)` runs the callback for each item in a thread,
+  at most `$concurrency` at a time, and resolves with the values in the order of the items (or rejects with the first
+  rejection). `Promise::all()` starts every promise at once. See `docs/promises.md`.
+
 ### A returned promise is followed
 
 - A promise returned by a `then()`/`catch()` callback or by `Promise::try()`, or passed to `$resolve`, is followed as

@@ -216,6 +216,27 @@ $promise2 = Promise::resolve(6);
 Promise::all($promise1, $promise2)->await();  // [5, 6]
 ```
 
+### Map method
+
+`Promise::map(iterable $items, Closure $callback, int $concurrency)` runs `$callback($item, $key)` for each item in a
+thread, with at most `$concurrency` threads at a time: the next item starts when one settles. `Promise::all()` starts
+every promise at once, so use `map()` for a long list, e.g. with one thread per CPU core:
+
+```php
+<?php
+$thumbnails = Promise::map(
+    $files,
+    fn(string $file) => createThumbnail($file),   // runs in a thread
+    4                                             // at most 4 threads at a time
+)->await();   // in the order (and keys) of $files
+```
+
+The promise is fulfilled with the values in the order and keys of the items, or rejected with the first rejection,
+after which no other item starts (the threads already running finish). A promise returned by the callback is followed.
+
+The threads are managed by the thread of the returned promise (one more process). The items, the callback and the
+values must be serializable, so the items are read at once: a generator is converted to an array.
+
 ### Race method
 
 The `race` method is used to wait for the first promise to be fulfilled or rejected.
