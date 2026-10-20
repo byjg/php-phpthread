@@ -27,6 +27,7 @@ class ForkHandler implements ThreadInterface
     private int $pid;
 
     private mixed $threadResult = null;
+    private bool $resultRead = false;
 
     private ?Closure $onFinish = null;
 
@@ -36,8 +37,8 @@ class ForkHandler implements ThreadInterface
      */
     public function __construct(?Closure $onFinish = null)
     {
-        if (!function_exists('pcntl_fork')) {
-            throw new RuntimeException('PHP was compiled without --enable-pcntl or you are running on Windows.');
+        if (!self::isAvailable()) {
+            throw new RuntimeException('ForkHandler needs the pcntl and posix extensions, which are not available on Windows.');
         }
 
         if (php_sapi_name() != 'cli') {
@@ -46,6 +47,14 @@ class ForkHandler implements ThreadInterface
 
         SharedMemory::getInstance();
         $this->onFinish = $onFinish;
+    }
+
+    /**
+     * The pcntl and posix extensions are loaded (they are optional in composer.json)
+     */
+    public static function isAvailable(): bool
+    {
+        return extension_loaded('pcntl') && extension_loaded('posix');
     }
 
     /**
@@ -72,6 +81,8 @@ class ForkHandler implements ThreadInterface
     public function start(mixed ...$args): void
     {
         $this->threadKey = 'thread_' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999);
+        $this->threadResult = null;
+        $this->resultRead = false;
 
         if (($this->pid = pcntl_fork()) == -1) {
             throw new RuntimeException('Couldn\'t fork the process');
@@ -117,7 +128,8 @@ class ForkHandler implements ThreadInterface
     }
 
     /**
-     * Get the thread result from the shared memory block and erase it
+     * Get the thread result from the shared memory block and erase it.
+     * The result is kept, so later calls return it (or re-throw it) again.
      *
      * @return mixed
      * @throws ContainerExceptionInterface
@@ -132,15 +144,11 @@ class ForkHandler implements ThreadInterface
             return null;
         }
 
-        if (!empty($this->threadResult)) {
-            return $this->threadResult;
+        if (!$this->resultRead) {
+            $this->threadResult = SharedMemory::getInstance()->get($this->threadKey);
+            SharedMemory::getInstance()->delete($this->threadKey);
+            $this->resultRead = true;
         }
-
-        $key = $this->threadKey;
-        $this->threadKey = null;
-
-        $this->threadResult = SharedMemory::getInstance()->get($key);
-        SharedMemory::getInstance()->delete($key);
 
         if ($this->threadResult instanceof Throwable) {
             throw $this->threadResult;
@@ -213,9 +221,9 @@ class ForkHandler implements ThreadInterface
     public function getStatus(): ThreadStatus
     {
         if (empty($this->threadKey)) {
-            return ThreadStatus::notStarted;
+            return ThreadStatus::NotStarted;
         }
 
-        return $this->isRunning() ? ThreadStatus::running : ThreadStatus::finished;
+        return $this->isRunning() ? ThreadStatus::Running : ThreadStatus::Finished;
     }
 }

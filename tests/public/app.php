@@ -3,7 +3,7 @@
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadPool;
 use ByJG\RestServer\HttpRequest;
-use ByJG\RestServer\HttpRequestHandler;
+use ByJG\RestServer\Server;
 use ByJG\RestServer\HttpResponse;
 use ByJG\RestServer\OutputProcessor\JsonOutputProcessor;
 use ByJG\RestServer\Route\Route;
@@ -17,6 +17,13 @@ $routeDefinition->addRoute(Route::get("/ping")
     ->withOutputProcessor(JsonOutputProcessor::class)
     ->withClosure(function (HttpResponse $response, HttpRequest $request) {
         $response->write(['ack' => php_sapi_name()]);
+    })
+);
+
+$routeDefinition->addRoute(Route::get("/handler")
+    ->withOutputProcessor(JsonOutputProcessor::class)
+    ->withClosure(function (HttpResponse $response, HttpRequest $request) {
+        $response->write(['handler' => Thread::handlerClass()]);
     })
 );
 
@@ -81,5 +88,5 @@ $routeDefinition->addRoute(Route::get('/promise')
     })
 );
 
-$restServer = new HttpRequestHandler();
+$restServer = new Server();
 $restServer->handle($routeDefinition);

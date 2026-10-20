@@ -1,8 +1,30 @@
+---
+sidebar_position: 5
+---
+
 # Limitations
 
 ## PHP-FPM
 
-PHP Threads is not supported in a PHP-FPM environment (nginx or apache).
+`pcntl_fork()` and the `parallel` extension are only used in the CLI. In PHP-FPM (nginx or apache), FrankenPHP or
+any other non-CLI SAPI, `Thread::create()` returns a `ProcessHandler`, which runs the closure in a child PHP CLI
+process: threads run in parallel, with the limits below.
+
+When `proc_open()` is disabled or no PHP CLI binary is found, `Thread::create()` returns a `SyncHandler`, which runs
+the closure synchronously in the current process: threads, thread pools and promises keep working and return the
+same results, but one task after another (no parallelism). `Thread::handlerClass()` tells which handler is used.
+
+## ProcessHandler
+
+- The closure, its arguments, the objects it captures and its return value must be serializable (no resources).
+- The child process only has what the Composer autoloader loads: no application bootstrap, globals or functions
+  declared outside the autoloader; changes to captured variables are not seen by the parent.
+- Two closures on the same line with the same number of parameters and captured variables can be mixed up when they
+  are serialized: write them on separate lines.
+- The child uses the CLI `php.ini`, and starting it costs some milliseconds per thread.
+- It needs `proc_open()` and a PHP CLI binary (`ProcessHandler::setPhpBinary()`), and the promises need `/dev/shm`.
+
+See [ProcessHandler](thread.md#processhandler).
 
 ## Forking and Data Sharing between Threads
 

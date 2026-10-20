@@ -18,6 +18,7 @@ jobs:
     strategy:
       matrix:
         php-version:
+          - "8.6"
           - "8.5"
           - "8.4"
           - "8.3"
@@ -36,21 +37,23 @@ jobs:
           -w /srv
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: composer install
       - run: php tests/get_class_name.php
       - run: composer test
-      - name: Validate PHP-FPM. Threads should not work.
+      - name: Validate PHP-FPM. Threads run in child PHP CLI processes (ProcessHandler).
         run: |
           apk add --no-cache curl
           echo "Ping"
           curl "http://nginx-php/ping" || true
+          echo "Handler"
+          curl -s "http://nginx-php/handler" | grep 'ProcessHandler'
           echo "Threads"
-          curl -s "http://nginx-php/thread" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/thread" | grep '{"thr1":6,"thr2":3}'
           echo "Threadpool"
-          curl -s "http://nginx-php/threadpool" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/threadpool" | grep '{"thr1":9,"thr2":6,"thr3":3}'
           echo "Promise"
-          curl -s "http://nginx-php/promise" | grep '{"error":{"type":"Runtime","message":"Threads only works in CLI mode"}}'
+          curl -s "http://nginx-php/promise" | grep '\[3\]'
 
   Build-zts:
     runs-on: 'ubuntu-latest'
@@ -63,7 +66,7 @@ jobs:
           - "8.3"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install requirements
         run: |
           apt -y -qq update
@@ -93,18 +96,18 @@ jobs:
     permissions:
       security-events: write
     container:
-      image: byjg/php:8.4-cli
+      image: byjg/php:8.5-cli
       options: --user root --privileged
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Composer
         run: composer install
 
       - name: Psalm
-        run: ./vendor/bin/psalm
+        run: ./vendor/bin/psalm.phar
           --show-info=true
           --report=psalm-results.sarif || [ $? = 2 ]
 

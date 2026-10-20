@@ -1,7 +1,13 @@
 <?php
 
+namespace Tests;
+
 use ByJG\PHPThread\Thread;
 use ByJG\PHPThread\ThreadPool;
+use ByJG\PHPThread\Handler\ForkHandler;
+use ByJG\PHPThread\Handler\ProcessHandler;
+use ByJG\PHPThread\Handler\SyncHandler;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ThreadPoolTest extends TestCase
@@ -9,13 +15,14 @@ class ThreadPoolTest extends TestCase
     #[\Override]
     public function tearDown(): void
     {
+        Thread::useHandler(null);
         Thread::gc();
     }
 
     protected function getClosure()
     {
         return function ($arg) {
-            sleep(1 * $arg);
+            usleep(100_000 * $arg);
             return $arg * 3;
         };
     }
@@ -69,5 +76,33 @@ class ThreadPoolTest extends TestCase
 
         $pool->stopAll();
         $this->assertEquals(0, $pool->countActiveWorkers());
+    }
+
+    public static function handlerProvider(): array
+    {
+        return [
+            'fork' => [ForkHandler::class],
+            'process' => [ProcessHandler::class],
+            'sync' => [SyncHandler::class],
+        ];
+    }
+
+    #[DataProvider('handlerProvider')]
+    public function testResults(string $handlerClass)
+    {
+        Thread::useHandler($handlerClass);
+
+        $pool = new ThreadPool();
+
+        $th1 = $pool->addWorker($this->getClosure(), 2);
+        $th2 = $pool->addWorker($this->getClosure(), 1);
+        $pool->startAll();
+        $th3 = $pool->addWorker($this->getClosure(), 0);
+        $pool->waitForCompletion();
+
+        $this->assertEquals(0, $pool->countActiveWorkers());
+        $this->assertEquals(6, $pool->getThreadResult($th1));
+        $this->assertEquals(3, $pool->getThreadResult($th2));
+        $this->assertEquals(0, $pool->getThreadResult($th3));
     }
 }
