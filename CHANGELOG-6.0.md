@@ -61,7 +61,7 @@ PHPThread 6.0 is a major version update that brings PHP 8.3+ compatibility, impr
 | **Runtime Environment** | No validation | CLI mode required | Now throws `RuntimeException` if executed in non-CLI SAPI (PHP-FPM, Apache mod_php). This was always a limitation but is now enforced. |
 | **Promise Interface** | `then(Closure $onFulfilled, Closure $onRejected = null)` | `then(Closure $onFulfilled, ?Closure $onRejected = null)` | Explicit nullable type declaration. No behavioral change, but signature is stricter. |
 | **Error Handling** | Silent failures with echo | Throws `RuntimeException` | Promise operations now throw proper exceptions instead of echoing debug information. |
-| **Composer Stability** | No minimum-stability | `minimum-stability: dev`<br>`prefer-stable: true` | Added stability preferences to composer.json. |
+| **Composer Stability** | No minimum-stability | `minimum-stability: dev`<br/>`prefer-stable: true` | Added stability preferences to composer.json. |
 
 ---
 
