@@ -1,9 +1,10 @@
 ---
 sidebar_key: phpthread
+sidebar_category: infrastructure
 tags: [php, concurrency]
 ---
 
-# ByJG PHPThread: Simplified Threads and Non-Blocking Code in PHP
+# PHPThread: Simplified Threads
 
 Run PHP code in parallel with one API (threads, thread pools and JavaScript-like promises) that works on any PHP: real threads on ZTS, forked processes on the CLI, child processes under PHP-FPM.
 
