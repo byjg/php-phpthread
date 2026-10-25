@@ -5,8 +5,7 @@ tags: [php, concurrency]
 
 # ByJG PHPThread: Simplified Threads and Non-Blocking Code in PHP
 
-ByJG PHPThread simplifies working with threads and non-blocking code in PHP,
-bridging the gap for a language that was not inherently designed for threading.
+Run PHP code in parallel with one API (threads, thread pools and JavaScript-like promises) that works on any PHP: real threads on ZTS, forked processes on the CLI, child processes under PHP-FPM.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-phpthread/actions/workflows/phpunit.yml)
@@ -47,7 +46,17 @@ PHP is traditionally designed for a **request-response cycle**, where scripts ar
 only in response to client requests and terminate after sending a response. While efficient for
 web applications, this architecture lacks native threading support for background or concurrent tasks.
 
-With PHPThread, you can overcome these limitations by leveraging:
+The usual answers depend on how PHP was built: `parallel` needs a ZTS build, `pcntl_fork()`
+only works on the CLI. Code written for one does not run on the other.
+
+PHPThread hides that choice behind one API. The same `Thread`, `ThreadPool` and `Promise`
+code runs on whichever is available:
+
+```php
+$thumbnails = Promise::map($images, fn($image) => makeThumbnail($image), concurrency: 4)->await();
+```
+
+It picks the backend for you:
 
 - **Forking (Default PHP)** for simulating threading.
 - **Zend Thread Safety (ZTS)** for true multi-threading environments.
